@@ -3,7 +3,7 @@ const soundsLib = {
         return false;
     },
     play(name: string): void {
-        return void 0;
+        console.log(name);
     }
     // TODO:
 };

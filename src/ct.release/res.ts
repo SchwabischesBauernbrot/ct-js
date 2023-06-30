@@ -179,7 +179,7 @@ const resLib = {
         /* eslint-disable prefer-destructuring */
         const atlases: string[] = [/*!@atlases@*/][0];
         const tiledImages: ExportedTiledTexture[] = [/*!@tiledImages@*/][0];
-        const sounds: string[] = [/*!@sounds@*/][0];
+        const exportedSounds: string[] = [/*!@sounds@*/][0];
         const bitmapFonts: string[] = [/*!@bitmapFonts@*/][0];
         const skeletons: ExportedSkeleton[] = [/*!@skeletons@*/][0];
         /* eslint-enable prefer-destructuring */
