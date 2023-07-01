@@ -2,9 +2,10 @@ import {ExporterError} from './ExporterError';
 
 type exportedSoundData = {
     name: string;
-    wav: string | false;
-    mp3: string | false;
-    ogg: string | false;
+    path: string;
+    // wav: string | false;
+    // mp3: string | false;
+    // ogg: string | false;
     poolSize: number;
     isMusic: boolean;
 };
@@ -22,14 +23,20 @@ export const getSounds = (proj: IProject): exportedSoundData[] => {
             });
             throw exporterError;
         }
-        const wav = s.origname.slice(-4) === '.wav',
-              mp3 = s.origname.slice(-4) === '.mp3',
-              ogg = s.origname.slice(-4) === '.ogg';
+        // const wav = s.origname.slice(-4) === '.wav',
+        //       mp3 = s.origname.slice(-4) === '.mp3',
+        //       ogg = s.origname.slice(-4) === '.ogg';
+        // sounds.push({
+        //     name: s.name,
+        //     wav: wav ? `./snd/${s.uid}.wav` : false,
+        //     mp3: mp3 ? `./snd/${s.uid}.mp3` : false,
+        //     ogg: ogg ? `./snd/${s.uid}.ogg` : false,
+        //     poolSize: s.poolSize || 5,
+        //     isMusic: Boolean(s.isMusic)
+        // } as exportedSoundData);
         sounds.push({
             name: s.name,
-            wav: wav ? `./snd/${s.uid}.wav` : false,
-            mp3: mp3 ? `./snd/${s.uid}.mp3` : false,
-            ogg: ogg ? `./snd/${s.uid}.ogg` : false,
+            path: `./snd/${s.uid}.${s.origname.slice(-3)}`,
             poolSize: s.poolSize || 5,
             isMusic: Boolean(s.isMusic)
         } as exportedSoundData);

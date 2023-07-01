@@ -233,8 +233,7 @@ const resLib = {
             loadingPromises.push(resLib.loadSkeleton(skel.dataPath, skel.name));
         }
         for (const sound of exportedSounds) {
-            // TODO: remove the extension thingie
-            resLib.loadSound(sound.wav, sound.name);
+            resLib.loadSound(sound.path, sound.name);
             // sounds.init(sound.name, {
             //     wav: sound.wav || false,
             //     mp3: sound.mp3 || false,
