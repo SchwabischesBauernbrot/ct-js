@@ -151,3 +151,10 @@ export type ExportedStyle = {
     dropShadowAngle?: number;
     dropShadowDistance?: number;
 }
+
+export type ExportedSound = {
+    /** The name of the sound and how it is used in the code */
+    name: string;
+    /** The path to the sound file.*/
+    path: string;
+};

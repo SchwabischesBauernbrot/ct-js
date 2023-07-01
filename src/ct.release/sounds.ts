@@ -3,8 +3,8 @@ const soundsLib = {
         return false;
     },
     play(name: string): void {
-        console.log(name);
+        sound.play(name);
+
     }
-    // TODO:
 };
 export default soundsLib;
