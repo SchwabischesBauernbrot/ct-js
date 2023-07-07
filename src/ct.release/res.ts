@@ -4,7 +4,7 @@ import uLib from './u';
 //merge start (maybe useless or need to do another way)
 import {ctjsGame} from '.';
 import * as PIXI from 'node_modules/pixi.js';
-import { sound } from "node_modules/@pixi/sound";
+import { sound, Sound } from "node_modules/@pixi/sound";
 //merge end
 // import {sounds} from './sounds';
 // import {Spine, ISkeletonData} from 'node_modules/pixi-spine';
@@ -183,7 +183,7 @@ const resLib = {
         path: string = u.required('path', 'ct.res.loadSound'),
         name: string = u.required('name', 'ct.res.loadSound')
     ): Promise<string> {
-        const asset = await sound.add(name, path);
+        const asset: Sound = await sound.add(name, path);
         resLib.sounds[name] = asset;
         return name;
     },
