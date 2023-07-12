@@ -1,5 +1,5 @@
 import { sound, filters, Filter, IMediaInstance, PlayOptions, Sound } from "node_modules/@pixi/sound";
-import {ctjsGame} from '.';
+import resLib from 'res';
 
 const fx = [
     'Telephone',
@@ -10,16 +10,15 @@ const fx = [
 ];
 
 const createFilter = (soundName: string, filter: string, ...args: Array<number | boolean>): void => {
-    const fx = new filters[`${filter}Filter` as 'Filter'](...args); // TODO: i don't know how to fix this, any idea?
-    const snd: Sound = ctjsGame.res.sounds[soundName] as Sound;
+    //@ts-ignore
+    const fx = new filters[`${filter}Filter` as 'Filter'](...args);// Seems there is no solution to type it properly 
+    const snd: Sound = resLib.sounds[soundName] as Sound;
     if (snd.filters === undefined) {
         snd.filters = [fx];
     } else {
         snd.filters.push(fx);
     }
 };
-const soundsLib = {
-
 
 export const soundsLib: Record<string, any> = {
     /**
@@ -34,7 +33,7 @@ export const soundsLib: Record<string, any> = {
     // TODO
     // init(name: string, options: ArrayBuffer | AudioBuffer | String | Options | HTMLAudioElement): Sound {
     //     const asset = sound.add(name, options);
-    //     ctjsGame.res.sounds[name] = asset;
+    //     resLib.sounds[name] = asset;
     // },
 
     // TODO: what to do with this?
@@ -51,16 +50,22 @@ export const soundsLib: Record<string, any> = {
 
 
     // TODO: doc, options, callback
-    play(name: string, options?: PlayOptions | Function ): void {
-        sound.play(name, options);    
+    /**
+     * Plays a sound.
+     *
+     * @param {string} name Sound's name
+     *
+     * @returns {void}
+     */
+    // play(name: string, options?: PlayOptions | Function ): void {
+    //     //@ts-ignore
+    //     sound.play(name, options);// TODO: find a solution for options
+    // },
+    async play(name: string, options?: PlayOptions | Function): Promise<IMediaInstance> {
+        //@ts-ignore
+        return (await sound.play(name, options) as IMediaInstance);// TODO: find a solution for options
+        // TODO: idk why, but in the editor, return is a WebAudioInstance not an IMediaInstance so it doesn't have the expected methods
     },
-    // async play(name: string, options?: PlayOptions | Function): Promise<IMediaInstance> {
-    //     return (await sound.play(name, options) as IMediaInstance);
-    //     //return sound.play(name, options);    
-    // },
-    // async play(name: string, options?: PlayOptions | Function): Promise<IMediaInstance> {
-    //     return ((await sound.play(name, options)) as any) as IMediaInstance;
-    // },
 
     /**
      * Stops a sound if a name is specified, otherwise stops all sound.
@@ -75,17 +80,11 @@ export const soundsLib: Record<string, any> = {
                 sound.stop(name);
             }
             else {
-                console.log("i am an instance", name)
                 name.stop();
             }
-            //if(this.playing(name)) {
-                    
-            //}
         }
         else {
-            //if(this.playing()) {
-                sound.stopAll();    
-           // } 
+            sound.stopAll();    
         }
     },
 
@@ -98,14 +97,14 @@ export const soundsLib: Record<string, any> = {
      */
     pause(name?: string): void {
         if(name) {
-            if(this.playing(name)) {
+            //if(this.playing(name)) {
                 sound.pause(name);    
-            }
+            //}
         }
         else {
-            if(this.playing()) {
+            //if(this.playing()) {
                 sound.pauseAll();    
-            } 
+            //} 
         }
     },
 
@@ -125,8 +124,17 @@ export const soundsLib: Record<string, any> = {
         }
     },
 
+    /**
+     * Returns whether a sound with the specified name was added to the game.
+     * This doesn't tell whether it is fully loaded or not, it only checks
+     * for existance of sound's metadata in your game.
+     * 
+     * @param {string} name Sound's name
+     * 
+     * @returns {boolean}
+     */
     exists(name: string): boolean {
-        return (name in ctjsGame.res.sounds);
+        return (name in resLib.sounds);
     },
 
     /**
@@ -138,7 +146,7 @@ export const soundsLib: Record<string, any> = {
      * @returns {boolean} `true` if the sound is playing, `false` otherwise.
      */
     playing(name?: string): boolean {
-        const snd: Sound = ctjsGame.res.sounds[name] as Sound;
+        const snd: Sound = resLib.sounds[name] as Sound;
         if(name) {
             return snd.isPlaying;
         }
@@ -176,25 +184,42 @@ export const soundsLib: Record<string, any> = {
     /**
      * Fades a sound to a given volume. Can affect either a specific instance or the whole group.
      *
-     * @param {string} name The name of a sound to affect.
+     * @param {string} name The name of a sound to affect. If null, all sounds are faded.
      * @param {number} newVolume The new volume from `0.0` to `1.0`.
      * @param {number} duration The duration of transition, in milliseconds.
      * @param {number} [id] If specified, then only the given sound instance is affected.
      *
      * @returns {void}
      */
-
-    // TODO: deal with id or instance
     fade(name: string, newVolume: number, duration: number, id?:number): void {
-       //TODO: add a this.playing condition?
-        const startValue = this.volume(name);
-        const startTime = performance.now();
+        // TODO: deal with id or instance
+        const start = {
+            time: performance.now(),
+            value: null,
+        }
+        if(name) {
+            start.value = this.volume(name);
+        }
+        else {
+            // Find the first playing sound and get its volume (as we can't access any kind of global volume)
+            for (const snd of Object.values(resLib.sounds) as Sound[]) {
+                if(snd.isPlaying) {
+                    start.value = snd.volume;
+                    break;
+                }
+            }
+        }
         const updateVolume = (currentTime: number) => {
-          const elapsed = currentTime - startTime;
+          const elapsed = currentTime - start.time;
           const progress = Math.min(elapsed / duration, 1);
-          const value = startValue + (newVolume - startValue) * progress;
-          this.volume(name, value);
-          console.log(value)
+          const value = start.value + (newVolume - start.value) * progress;
+          if(name) {
+            this.volume(name, value);
+          }
+          else {
+            this.globalVolume(value);
+          }
+          
           if (progress < 1) {
             requestAnimationFrame(updateVolume);
           }
@@ -204,19 +229,17 @@ export const soundsLib: Record<string, any> = {
 
     // WIP
     removeFilter(name: string, filter: string): void {
-        const snd: Sound = ctjsGame.res.sounds[name] as Sound;
+        const snd: Sound = resLib.sounds[name] as Sound;
         const filters = snd.filters;
         if(filters && filters.length > 0) {
             if(!filter.includes("Filter")) {
                 filter += "Filter";
             }
-            console.log(filter)
             filters.forEach((f:Filter, i: number) => {
                 const currentFilter = f.constructor.name;
                 if (currentFilter === filter) {
-                    console.log(f)
-                    // Seems to works but i probably have to refresh the sound or something
-                    //snd.filters.splice(i, 1);
+                    snd.filters.splice(i, 1);
+                    // Splice "works" but maybe i have to refresh the sound or something
                     // https://pixijs.io/sound/docs/filters.DistortionFilter.html
                     // init or destroy or disconnect 
                     //snd.filters[i].init();// no: no effect even if destination, etc are  set to undefined
@@ -224,19 +247,12 @@ export const soundsLib: Record<string, any> = {
                     //snd.filters[i].disconnect();// no: it seems to kill the sound: destination, etc are NOT set to null
                 }
             });
-            //console.log(ctjsGame.res.sounds[name])
-            // for (const f in filters) {
-            //     console.log(Object.keys(f))
-            //     // if (ctjsGame.res.sounds[name].filters[f] === filter) {
-            //     //     ctjsGame.res.sounds[name].filters.splice(f, 1);
-            //     // }
-            // }
         }
     }
 };
 
 for (const f of fx) {
-    sounds[`add${f}Filter`] = (soundName: string, ...args: any): void => {
+    soundsLib[`add${f}Filter`] = (soundName: string, ...args: any): void => {
         createFilter(soundName, f, ...args);
     }
 }

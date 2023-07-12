@@ -1,13 +1,5 @@
-/// <reference types="../../app/node_modules/pixi-spine" />
-
 import uLib from './u';
-//merge start (maybe useless or need to do another way)
-import {ctjsGame} from '.';
-import * as PIXI from 'node_modules/pixi.js';
 import { sound, Sound } from "node_modules/@pixi/sound";
-//merge end
-// import {sounds} from './sounds';
-// import {Spine, ISkeletonData} from 'node_modules/pixi-spine';
 import {TextureShape, ExportedTiledTexture, ExportedSkeleton, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
 import * as pixiMod from 'node_modules/pixi.js';
@@ -180,8 +172,8 @@ const resLib = {
      * @returns The name of the imported sound.
      */
     async loadSound(
-        path: string = u.required('path', 'ct.res.loadSound'),
-        name: string = u.required('name', 'ct.res.loadSound')
+        path: string = uLib.required('path', 'ct.res.loadSound'),
+        name: string = uLib.required('name', 'ct.res.loadSound')
     ): Promise<string> {
         const asset: Sound = await sound.add(name, path);
         resLib.sounds[name] = asset;
