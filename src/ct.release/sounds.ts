@@ -7,19 +7,14 @@ declare var PIXI: typeof pixiMod & {
         filters: typeof pixiSoundFilters;
     }
 };
-
-const fx = [
-    'Telephone',
-    'Distortion',
-    'Stereo',
-    'Reverb',
-    'Equalizer'
-];
-
-const createFilter = (
+type fxNames = Exclude<keyof typeof pixiSoundFilters, 'Filter' | 'StreamFilter'>;
+type fxConstructorOptions = {
+    [T in fxNames]: ConstructorParameters<typeof pixiSoundFilters[T]>
+}
+const createFilter = <T extends fxNames>(
     soundName: string,
-    filter: string,
-    ...args: Array<number | boolean>
+    filter: T,
+    ...args: fxConstructorOptions[T]
 ): void => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
@@ -243,13 +238,8 @@ export const soundsLib = {
                 }
             });
         }
-    }
+    },
+    createFilter
 };
-
-for (const f of fx) {
-    soundsLib[`add${f}Filter`] = (soundName: string, ...args: any): void => {
-        createFilter(soundName, f, ...args);
-    };
-}
 
 export default soundsLib;
