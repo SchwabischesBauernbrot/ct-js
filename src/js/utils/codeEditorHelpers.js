@@ -28,7 +28,11 @@
         const pixiDtsPromise = fs.readFile(path.join(__dirname, './data/typedefs/pixi.d.ts'), {
             encoding: 'utf-8'
         });
-        const [ctDts, pixiDts, globalsDts] = await Promise.all([ctDtsPromise, pixiDtsPromise, globalsPromise]);
+        const [ctDts, pixiDts, globalsDts] = await Promise.all([
+            ctDtsPromise,
+            pixiDtsPromise,
+            globalsPromise
+        ]);
         const exposer = `
         declare module 'node_modules/pixi.js' {
             export * from 'bundles/pixi.js/src/index';
