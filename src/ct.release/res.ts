@@ -171,15 +171,36 @@ const resLib = {
      * Loads a sound.
      * @param {string|boolean} path Path to the sound
      * @param {string} name The name of the sound as it will be used in ct.js game.
-     * @returns The name of the imported sound.
+     * @param {boolean} preload Whether to start loading now or postpone it.
+     * Postponed sounds will load when a game tries to play them, or when you manually
+     * trigger the download with `sounds.load(name)`.
+     * @returns A promise with the name of the imported sound.
      */
-    async loadSound(
+    loadSound(
         path: string = uLib.required('path', 'ct.res.loadSound'),
-        name: string = uLib.required('name', 'ct.res.loadSound')
+        name: string = uLib.required('name', 'ct.res.loadSound'),
+        preload = true
     ): Promise<string> {
-        const asset: Sound = await sound.add(name, path);
-        resLib.sounds[name] = asset;
-        return name;
+        const key = `pixiSound-${name}`;
+        return new Promise<string>((resolve, reject) => {
+            const asset = PIXI.sound.add(key, {
+                url: path,
+                preload,
+                loaded: preload ?
+                    (err) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resLib.sounds[name] = asset;
+                            resolve(name);
+                        }
+                    } :
+                    void 0
+            });
+            if (!preload) {
+                resolve(name);
+            }
+        });
     },
 
     async loadGame(): Promise<void> {
@@ -227,15 +248,7 @@ const resLib = {
             loadingPromises.push(resLib.loadSkeleton(skel.dataPath, skel.name));
         }
         for (const sound of exportedSounds) {
-            resLib.loadSound(sound.path, sound.name);
-            // sounds.init(sound.name, {
-            //     wav: sound.wav || false,
-            //     mp3: sound.mp3 || false,
-            //     ogg: sound.ogg || false
-            // }, {
-            //     poolSize: sound.poolSize,
-            //     music: sound.isMusic
-            // });
+            loadingPromises.push(resLib.loadSound(sound.path, sound.name));
         }
 
         /*!@res@*/

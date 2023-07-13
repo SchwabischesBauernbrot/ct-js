@@ -27,33 +27,22 @@ const createFilter = (soundName: string, filter: string, ...args: Array<number |
     }
 };
 
-export const soundsLib: Record<string, any> = {
-    /**
-     * Creates a new Sound object and puts it in resource object
-     *
-     * @param {string} name Sound's name
-     * @param {Object} options An options object
-     *
-     * @returns {Object} Sound's object
-     */
-
-    // TODO
-    // init(name: string, options: ArrayBuffer | AudioBuffer | String | Options | HTMLAudioElement): Sound {
-    //     const asset = sound.add(name, options);
-    //     resLib.sounds[name] = asset;
-    // },
-
-    // TODO: what to do with this?
+export const soundsLib = {
     /**
      * Preloads a sound. This is usually applied to music files before playing
      * as they are not preloaded by default.
      *
      * @param {string} name The name of a sound
-     * @returns {void}
+     * @returns {Promise<string>} A promise that resolves into the name of the loaded sound asset.
      */
-    // ct.sound.load = function load(name) {
-    //     ct.res.sounds[name].load();
-    // };
+    async load(name: string): Promise<string> {
+        const key = `pixiSound-${name}`;
+        if (!PIXI.Assets.cache.has(key)) {
+            throw new Error(`[sounds.load] Sound ${name} was not found. Is it a typo? Did you mean to use res.loadSound instead?`);
+        }
+        await PIXI.Assets.load<Sound>(key);
+        return name;
+    },
 
 
     // TODO: doc, options, callback
