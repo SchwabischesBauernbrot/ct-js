@@ -4,9 +4,9 @@ declare var PIXI: typeof pixiMod;
 /*! Made with ct.js http://ctjs.rocks/ */
 
 import {updateViewport, toggleFullscreen, getIsFullscreen} from './fittoscreen';
-import {actionsLib as actionsM, inputsLib as inputsM, CtAction} from './inputs';
+import {actionsLib as actionsM, inputsLib as inputsM} from './inputs';
 import backgroundsM, {Background} from './backgrounds';
-import cameraM, {Camera} from './camera';
+import cameraM from './camera';
 import contentM from './content';
 // import emitters, {EmitterTandem} from './emitters';
 import resM from 'res';
@@ -14,7 +14,7 @@ import roomsM, {Room} from './rooms';
 import soundsM from 'sounds';
 import stylesM from 'styles';
 import templatesM, {Copy} from './templates';
-import tilemapsM, {Tilemap} from './tilemaps';
+import tilemapsM from './tilemaps';
 import timerM from './timer';
 import uM from './u';
 
