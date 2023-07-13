@@ -308,7 +308,7 @@ const resLib = {
             throw new Error(`Attempt to get a shape of a non-existent texture ${name}`);
         }
         return resLib.textures[name].shape;
-    },
+    }
     /**
      * Creates a skeletal animated sprite, ready to be added to your copies.
      * @param {string} name The name of the skeleton asset.

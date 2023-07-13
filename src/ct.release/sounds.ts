@@ -13,14 +13,19 @@ const fx = [
     'Distortion',
     'Stereo',
     'Reverb',
-    'Equalizer',
+    'Equalizer'
 ];
 
-const createFilter = (soundName: string, filter: string, ...args: Array<number | boolean>): void => {
+const createFilter = (
+    soundName: string,
+    filter: string,
+    ...args: Array<number | boolean>
+): void => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
     const fx = new PIXI.sound.filters[`${filter}Filter` as 'Filter'](...args);// Seems there is no solution to type it properly
     const snd: Sound = resLib.sounds[soundName] as Sound;
-    if (snd.filters === undefined) {
+    if (snd.filters === void 0) {
         snd.filters = [fx];
     } else {
         snd.filters.push(fx);
@@ -86,7 +91,7 @@ export const soundsLib = {
      * Pauses a sound if a name is specified, otherwise pauses all sound.
      *
      * @param {string} name Sound's name
-     * 
+     *
      * @returns {void}
      */
     pause(name?: string): void {
@@ -105,7 +110,7 @@ export const soundsLib = {
      * Resumes a sound if a name is specified, otherwise resumes all sound.
      *
      * @param {string} name Sound's name
-     * 
+     *
      * @returns {void}
      */
     resume(name?: string): void {
@@ -120,9 +125,9 @@ export const soundsLib = {
      * Returns whether a sound with the specified name was added to the game.
      * This doesn't tell whether it is fully loaded or not, it only checks
      * for existance of sound's metadata in your game.
-     * 
+     *
      * @param {string} name Sound's name
-     * 
+     *
      * @returns {boolean}
      */
     exists(name: string): boolean {
@@ -130,11 +135,12 @@ export const soundsLib = {
     },
 
     /**
-     * Returns whether a sound is currently playing if a name is specified, otherwise if any sound is currently playing,
+     * Returns whether a sound is currently playing if a name is specified.
+     * otherwise if any sound is currently playing,
      * either an exact sound (found by its ID) or any sound of a given name.
      *
      * @param {string} name Sound's name
-     * 
+     *
      * @returns {boolean} `true` if the sound is playing, `false` otherwise.
      */
     playing(name?: string): boolean {
@@ -192,37 +198,36 @@ export const soundsLib = {
         else {
             // Find the first playing sound and get its volume (as we can't access any kind of global volume)
             for (const snd of Object.values(resLib.sounds) as Sound[]) {
-                if(snd.isPlaying) {
+                if (snd.isPlaying) {
                     start.value = snd.volume;
                     break;
                 }
             }
         }
         const updateVolume = (currentTime: number) => {
-          const elapsed = currentTime - start.time;
-          const progress = Math.min(elapsed / duration, 1);
-          const value = start.value + (newVolume - start.value) * progress;
-          if(name) {
-            this.volume(name, value);
-          }
-          else {
-            this.globalVolume(value);
-          }
-          
-          if (progress < 1) {
-            requestAnimationFrame(updateVolume);
-          }
-        }
+            const elapsed = currentTime - start.time;
+            const progress = Math.min(elapsed / duration, 1);
+            const value = start.value + (newVolume - start.value) * progress;
+            if (name) {
+                this.volume(name, value);
+            } else {
+                this.globalVolume(value);
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(updateVolume);
+            }
+        };
         requestAnimationFrame(updateVolume);
     },
 
     // WIP
     removeFilter(name: string, filter: string): void {
         const snd: Sound = resLib.sounds[name] as Sound;
-        const filters = snd.filters;
-        if(filters && filters.length > 0) {
-            if(!filter.includes("Filter")) {
-                filter += "Filter";
+        const {filters} = snd;
+        if (filters && filters.length > 0) {
+            if (!filter.includes('Filter')) {
+                filter += 'Filter';
             }
             filters.forEach((f:Filter, i: number) => {
                 const currentFilter = f.constructor.name;
@@ -230,10 +235,16 @@ export const soundsLib = {
                     snd.filters.splice(i, 1);
                     // Splice "works" but maybe i have to refresh the sound or something
                     // https://pixijs.io/sound/docs/filters.DistortionFilter.html
-                    // init or destroy or disconnect 
-                    //snd.filters[i].init();// no: no effect even if destination, etc are  set to undefined
-                    //snd.filters[i].destroy();// no: it seems to kill the sound: destination, etc are set to null
-                    //snd.filters[i].disconnect();// no: it seems to kill the sound: destination, etc are NOT set to null
+                    // init or destroy or disconnect
+
+                    // no: no effect even if destination, etc are  set to undefined
+                    // snd.filters[i].init();
+
+                    // no: it seems to kill the sound: destination, etc are set to null
+                    // snd.filters[i].destroy();
+
+                    // no: it seems to kill the sound: destination, etc are NOT set to null
+                    // snd.filters[i].disconnect();
                 }
             });
         }
