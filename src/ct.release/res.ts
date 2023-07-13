@@ -38,7 +38,7 @@ const loadingScreen = document.querySelector('.ct-aLoadingScreen') as HTMLDivEle
  * also exposing API for dynamic asset loading.
  */
 const resLib = {
-    sounds: {} as Record<string, Object>,//TODO: need a Type: PIXI.Sound doesn't exist
+    sounds: {} as Record<string, Sound>,
     textures: {} as Record<string, CtjsAnimation>,
     skeletons: {} as Record<string, any>,
     groups: [/*!@resourceGroups@*/][0] as Record<string, string[]>,

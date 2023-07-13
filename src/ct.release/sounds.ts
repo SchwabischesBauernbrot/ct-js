@@ -56,23 +56,17 @@ export const soundsLib = {
      *
      * @param {string} name Sound's name
      *
-     * @returns {void}
+     * @returns Either a sound instance, or a promise that resolves into a sound instance.
      */
-    // play(name: string, options?: PlayOptions | Function ): void {
-    //     //@ts-ignore
-    //     sound.play(name, options);// TODO: find a solution for options
-    // },
-    async play(name: string, options?: PlayOptions | Function): Promise<IMediaInstance> {
-        //@ts-ignore
-        return (await sound.play(name, options) as IMediaInstance);// TODO: find a solution for options
-        // TODO: idk why, but in the editor, return is a WebAudioInstance not an IMediaInstance so it doesn't have the expected methods
+    play(name: string, options?: PlayOptions): Promise<IMediaInstance> | IMediaInstance {
+        return resLib.sounds[name].play(options);
     },
 
     /**
      * Stops a sound if a name is specified, otherwise stops all sound.
      *
-     * @param {string} name Sound's name
-     * 
+     * @param {string|IMediaInstance} [name] Sound's name, or the sound instance.
+     *
      * @returns {void}
      */
     stop(name?: string | IMediaInstance): void {
@@ -190,13 +184,14 @@ export const soundsLib = {
         // TODO: deal with id or instance
         const start = {
             time: performance.now(),
-            value: null,
-        }
-        if(name) {
-            start.value = this.volume(name);
-        }
-        else {
-            // Find the first playing sound and get its volume (as we can't access any kind of global volume)
+            value: null as number
+        };
+        const soundRes = resLib.sounds[name];
+        if (name) {
+            start.value = soundRes.volume;
+        } else {
+            // Find the first playing sound and get its volume
+            // (as we can't access any kind of global volume)
             for (const snd of Object.values(resLib.sounds) as Sound[]) {
                 if (snd.isPlaying) {
                     start.value = snd.volume;
@@ -254,7 +249,7 @@ export const soundsLib = {
 for (const f of fx) {
     soundsLib[`add${f}Filter`] = (soundName: string, ...args: any): void => {
         createFilter(soundName, f, ...args);
-    }
+    };
 }
 
 export default soundsLib;
