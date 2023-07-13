@@ -22,7 +22,7 @@ import {ExportedMeta, viewMode} from '../node_requires/exporter/_exporterContrac
 
 // eslint-disable-next-line no-console
 console.log(
-    `%c 😺 %c ct.js game editor %c v/*!@ctversion@*/ %c https://ctjs.rocks/ `,
+    '%c 😺 %c ct.js game editor %c v/*!@ctversion@*/ %c https://ctjs.rocks/ ',
     'background: #446adb; color: #fff; padding: 0.5em 0;',
     'background: #5144db; color: #fff; padding: 0.5em 0;',
     'background: #446adb; color: #fff; padding: 0.5em 0;',
@@ -47,6 +47,7 @@ setInterval(function cleanDeadPool() {
     deadPool.length = 0;
 }, 1000 * 60);
 
+// eslint-disable-next-line prefer-destructuring
 export const meta: ExportedMeta = [/*!@projectmeta@*/][0];
 
 /**
@@ -157,6 +158,7 @@ export let pixiApp: pixiMod.Application;
         PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
     }
     settings.speed = [/*!@maxfps@*/][0] || 60;
+    // eslint-disable-next-line prefer-destructuring
     settings.highDensity = [/*!@highDensity@*/][0];
     document.getElementById('ct').appendChild(pixiApp.view as HTMLCanvasElement);
 }
@@ -255,7 +257,7 @@ let loading: Promise<void>;
         setTimeout(() => {
             pixiApp.ticker.add(loop);
             roomsM.forceSwitch(roomsM.starting);
-        }, 0)
+        }, 0);
     });
 }
 
