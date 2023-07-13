@@ -1,5 +1,12 @@
-import { sound, filters, Filter, IMediaInstance, PlayOptions, Sound } from "node_modules/@pixi/sound";
+import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound} from 'node_modules/@pixi/sound';
 import resLib from 'res';
+
+import * as pixiMod from 'node_modules/pixi.js';
+declare var PIXI: typeof pixiMod & {
+    sound: typeof pixiSound & {
+        filters: typeof pixiSoundFilters;
+    }
+};
 
 const fx = [
     'Telephone',
@@ -11,7 +18,7 @@ const fx = [
 
 const createFilter = (soundName: string, filter: string, ...args: Array<number | boolean>): void => {
     //@ts-ignore
-    const fx = new filters[`${filter}Filter` as 'Filter'](...args);// Seems there is no solution to type it properly 
+    const fx = new PIXI.sound.filters[`${filter}Filter` as 'Filter'](...args);// Seems there is no solution to type it properly
     const snd: Sound = resLib.sounds[soundName] as Sound;
     if (snd.filters === undefined) {
         snd.filters = [fx];
@@ -75,16 +82,14 @@ export const soundsLib: Record<string, any> = {
      * @returns {void}
      */
     stop(name?: string | IMediaInstance): void {
-        if(name) {
-            if(typeof name === 'string') {
-                sound.stop(name);
-            }
-            else {
+        if (name) {
+            if (typeof name === 'string') {
+                PIXI.sound.stop(name);
+            } else {
                 name.stop();
             }
-        }
-        else {
-            sound.stopAll();    
+        } else {
+            PIXI.sound.stopAll();
         }
     },
 
@@ -96,15 +101,14 @@ export const soundsLib: Record<string, any> = {
      * @returns {void}
      */
     pause(name?: string): void {
-        if(name) {
+        if (name) {
             //if(this.playing(name)) {
-                sound.pause(name);    
+            PIXI.sound.pause(name);
             //}
-        }
-        else {
+        } else {
             //if(this.playing()) {
-                sound.pauseAll();    
-            //} 
+            PIXI.sound.pauseAll();
+            //}
         }
     },
 
@@ -115,12 +119,11 @@ export const soundsLib: Record<string, any> = {
      * 
      * @returns {void}
      */
-    resume (name?: string): void {
-        if(name) {
-            sound.resume(name);    
-        }
-        else {
-            sound.resumeAll();    
+    resume(name?: string): void {
+        if (name) {
+            PIXI.sound.resume(name);
+        } else {
+            PIXI.sound.resumeAll();
         }
     },
 
@@ -147,13 +150,10 @@ export const soundsLib: Record<string, any> = {
      */
     playing(name?: string): boolean {
         const snd: Sound = resLib.sounds[name] as Sound;
-        if(name) {
+        if (name) {
             return snd.isPlaying;
         }
-        else {
-            return sound.isPlaying();    
-        }
-        
+        return PIXI.sound.isPlaying();
     },
 
     /**
@@ -166,10 +166,10 @@ export const soundsLib: Record<string, any> = {
      * @returns {number} The current volume of the sound.
      */
     volume(name: string, volume?: number): number {
-        if(volume) {
-            sound.volume(name, volume);
+        if (volume) {
+            PIXI.sound.volume(name, volume);
         }
-        return sound.volume(name);
+        return PIXI.sound.volume(name);
     },
 
     /**
@@ -178,7 +178,7 @@ export const soundsLib: Record<string, any> = {
      *
      */
     globalVolume(value: number): void {
-        sound.volumeAll = value;
+        PIXI.sound.volumeAll = value;
     },
 
     /**

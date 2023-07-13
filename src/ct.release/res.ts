@@ -1,9 +1,11 @@
 import uLib from './u';
-import { sound, Sound } from "node_modules/@pixi/sound";
+import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
 import {TextureShape, ExportedTiledTexture, ExportedSkeleton, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
 import * as pixiMod from 'node_modules/pixi.js';
-declare var PIXI: typeof pixiMod;
+declare var PIXI: typeof pixiMod & {
+    sound: typeof pixiSound
+};
 
 export type CtjsTexture = pixiMod.Texture & {
     shape: TextureShape,
