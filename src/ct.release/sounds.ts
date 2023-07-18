@@ -11,19 +11,20 @@ type fxNames = Exclude<keyof typeof pixiSoundFilters, 'Filter' | 'StreamFilter'>
 type fxConstructorOptions = {
     [T in fxNames]: ConstructorParameters<typeof pixiSoundFilters[T]>
 }
-const createFilter = <T extends fxNames>(
+const addFilter = <T extends fxNames>(
     soundName: string,
     filter: T,
     ...args: fxConstructorOptions[T]
 ): void => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    const fx = new PIXI.sound.filters[`${filter}Filter` as 'Filter'](...args);// Seems there is no solution to type it properly
+    const fx = new PIXI.sound.filters[filter as 'Filter'](...args);// Seems there is no solution to type it properly
     const snd: Sound = resLib.sounds[soundName] as Sound;
     if (snd.filters === void 0) {
         snd.filters = [fx];
     } else {
-        snd.filters.push(fx);
+        const copy = snd.filters;
+        snd.filters = [...copy, fx];
     }
 };
 
@@ -220,26 +221,17 @@ export const soundsLib = {
                 filter += 'Filter';
             }
             filters.forEach((f:Filter, i: number) => {
+                // TODO: use instanceof instead constructor name
                 const currentFilter = f.constructor.name;
                 if (currentFilter === filter) {
                     snd.filters.splice(i, 1);
-                    // Splice "works" but maybe i have to refresh the sound or something
-                    // https://pixijs.io/sound/docs/filters.DistortionFilter.html
-                    // init or destroy or disconnect
-
-                    // no: no effect even if destination, etc are  set to undefined
-                    // snd.filters[i].init();
-
-                    // no: it seems to kill the sound: destination, etc are set to null
-                    // snd.filters[i].destroy();
-
-                    // no: it seems to kill the sound: destination, etc are NOT set to null
-                    // snd.filters[i].disconnect();
+                    const copy = snd.filters;
+                    snd.filters = copy.length > 0 ? [...copy] : void 0;
                 }
             });
         }
     },
-    createFilter
+    addFilter
 };
 
 export default soundsLib;
