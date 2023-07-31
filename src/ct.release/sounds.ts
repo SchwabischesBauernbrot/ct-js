@@ -7,11 +7,20 @@ declare var PIXI: typeof pixiMod & {
         filters: typeof pixiSoundFilters;
     }
 };
-type fxNames = Exclude<keyof typeof pixiSoundFilters, 'Filter' | 'StreamFilter'>;
-type fxConstructorOptions = {
-    [T in fxNames]: ConstructorParameters<typeof pixiSoundFilters[T]>
+
+type fxName = Exclude<keyof typeof pixiSoundFilters, 'Filter' | 'StreamFilter'>;
+const fxNames = Object.keys(pixiSoundFilters)
+                .filter((name: keyof typeof pixiSoundFilters) => name !== 'Filter' && name !== 'StreamFilter');
+const fxNamesToClasses = {} as {
+    [T in fxName]: typeof pixiSoundFilters[T]
+};
+for (const fxName of fxNames) {
+    fxNamesToClasses[fxName] = pixiSoundFilters[fxName];
 }
-const addFilter = <T extends fxNames>(
+type fxConstructorOptions = {
+    [T in fxName]: ConstructorParameters<typeof pixiSoundFilters[T]>
+}
+const addFilter = <T extends fxName>(
     soundName: string,
     filter: T,
     ...args: fxConstructorOptions[T]
@@ -213,17 +222,16 @@ export const soundsLib = {
     },
 
     // WIP
-    removeFilter(name: string, filter: string): void {
+    removeFilter(name: string, filter: fxName): void {
         const snd: Sound = resLib.sounds[name] as Sound;
         const {filters} = snd;
         if (filters && filters.length > 0) {
             if (!filter.includes('Filter')) {
                 filter += 'Filter';
             }
-            filters.forEach((f:Filter, i: number) => {
+            filters.forEach((f: Filter, i: number) => {
                 // TODO: use instanceof instead constructor name
-                const currentFilter = f.constructor.name;
-                if (currentFilter === filter) {
+                if (f instanceof fxNamesToClasses[filter]) {
                     snd.filters.splice(i, 1);
                     const copy = snd.filters;
                     snd.filters = copy.length > 0 ? [...copy] : void 0;
