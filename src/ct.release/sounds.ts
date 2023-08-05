@@ -8,6 +8,10 @@ declare var PIXI: typeof pixiMod & {
     }
 };
 
+type FilterPreserved = Filter & {
+    preserved: string;
+};
+
 type fxName = Exclude<keyof typeof pixiSoundFilters, 'Filter' | 'StreamFilter'>;
 const fxNames = Object.keys(pixiSoundFilters)
                 .filter((name: keyof typeof pixiSoundFilters) => name !== 'Filter' && name !== 'StreamFilter');
@@ -20,22 +24,40 @@ for (const fxName of fxNames) {
 type fxConstructorOptions = {
     [T in fxName]: ConstructorParameters<typeof pixiSoundFilters[T]>
 }
-const addFilter = <T extends fxName>(
-    soundName: string,
-    filter: T,
-    ...args: fxConstructorOptions[T]
-): void => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    const fx = new PIXI.sound.filters[filter as 'Filter'](...args);// Seems there is no solution to type it properly
-    const snd: Sound = resLib.sounds[soundName] as Sound;
-    if (snd.filters === void 0) {
-        snd.filters = [fx];
-    } else {
-        const copy = snd.filters;
-        snd.filters = [...copy, fx];
+
+/**
+ * Used for removing filter
+ * @param {string} [name] The name of a sound to affect. If omitted, it affects all sounds.
+ * @param {string} [filter] The name of the filter. If omitted, all filters are removed.
+ * @returns An array of filter(s) (after the removal(s)) or null (if no filter remains).
+ */
+const remainingFilter = (
+    name?: string | Sound,
+    filter?: fxName
+): [] | null => {
+    // eslint-disable-next-line no-nested-ternary
+    const filters = name ? (typeof name === 'string' ? resLib.sounds[name as string].filters : name.filters) : PIXI.sound.filtersAll;
+    if (filters && filters.length > 0) {
+        if (!filter.includes('Filter')) {
+            filter += 'Filter';
+        }
+        const copy = [...filters];
+        if (filter) {
+            filters.forEach((f: FilterPreserved, i: number) => {
+                if (f.preserved === filter) {
+                    copy.splice(i, 1);
+                }
+            });
+            // TODO: ask CoMiGo why
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            //@ts-ignore
+            return copy.length > 0 ? copy : null;
+        }
     }
+    return null;
 };
+
+const pixiSoundPrefix = 'pixiSound-';// TODO: CoMiGo: where should it be declared to be used also in res.ts
 
 export const soundsLib = {
     /**
@@ -46,7 +68,7 @@ export const soundsLib = {
      * @returns {Promise<string>} A promise that resolves into the name of the loaded sound asset.
      */
     async load(name: string): Promise<string> {
-        const key = `pixiSound-${name}`;
+        const key = `${pixiSoundPrefix}${name}`;
         if (!PIXI.Assets.cache.has(key)) {
             throw new Error(`[sounds.load] Sound ${name} was not found. Is it a typo? Did you mean to use res.loadSound instead?`);
         }
@@ -54,13 +76,22 @@ export const soundsLib = {
         return name;
     },
 
-
-    // TODO: doc, options, callback
     /**
      * Plays a sound.
      *
      * @param {string} name Sound's name
-     *
+     * @param {PlayOptions} [options] Options used for sound playback.
+     * @param {Function} options.complete When completed.
+     * @param {number} options.end End time in seconds.
+     * @param {filters.Filter[]} options.filters Filters that apply to play.
+     * @param {Function} options.loaded If not already preloaded, callback when finishes load.
+     * @param {boolean} options.loop Override default loop, default to the Sound's loop setting.
+     * @param {boolean} options.muted If sound instance is muted by default.
+     * @param {boolean} options.singleInstance Setting true will stop any playing instances.
+     * @param {number} options.speed Override default speed, default to the Sound's speed setting.
+     * @param {string} options.sprite The sprite to play.
+     * @param {number} options.start Start time offset in seconds.
+     * @param {number} options.volume Override default volume.
      * @returns Either a sound instance, or a promise that resolves into a sound instance.
      */
     play(name: string, options?: PlayOptions): Promise<IMediaInstance> | IMediaInstance {
@@ -77,7 +108,7 @@ export const soundsLib = {
     stop(name?: string | IMediaInstance): void {
         if (name) {
             if (typeof name === 'string') {
-                PIXI.sound.stop(name);
+                PIXI.sound.stop(`${pixiSoundPrefix}${name}`);
             } else {
                 name.stop();
             }
@@ -89,32 +120,28 @@ export const soundsLib = {
     /**
      * Pauses a sound if a name is specified, otherwise pauses all sound.
      *
-     * @param {string} name Sound's name
+     * @param {string} [name] Sound's name
      *
      * @returns {void}
      */
     pause(name?: string): void {
         if (name) {
-            //if(this.playing(name)) {
-            PIXI.sound.pause(name);
-            //}
+            PIXI.sound.pause(`${pixiSoundPrefix}${name}`);
         } else {
-            //if(this.playing()) {
             PIXI.sound.pauseAll();
-            //}
         }
     },
 
     /**
      * Resumes a sound if a name is specified, otherwise resumes all sound.
      *
-     * @param {string} name Sound's name
+     * @param {string} [name] Sound's name
      *
      * @returns {void}
      */
     resume(name?: string): void {
         if (name) {
-            PIXI.sound.resume(name);
+            PIXI.sound.resume(`${pixiSoundPrefix}${name}`);
         } else {
             PIXI.sound.resumeAll();
         }
@@ -134,11 +161,10 @@ export const soundsLib = {
     },
 
     /**
-     * Returns whether a sound is currently playing if a name is specified.
-     * otherwise if any sound is currently playing,
-     * either an exact sound (found by its ID) or any sound of a given name.
+     * Returns whether a sound is currently playing if a name is specified,
+     * otherwise if any sound is currently playing.
      *
-     * @param {string} name Sound's name
+     * @param {string} [name] Sound's name
      *
      * @returns {boolean} `true` if the sound is playing, `false` otherwise.
      */
@@ -160,6 +186,7 @@ export const soundsLib = {
      * @returns {number} The current volume of the sound.
      */
     volume(name: string, volume?: number): number {
+        name = `${pixiSoundPrefix}${name}`;
         if (volume) {
             PIXI.sound.volume(name, volume);
         }
@@ -175,45 +202,30 @@ export const soundsLib = {
         PIXI.sound.volumeAll = value;
     },
 
+    // TODO: maybe deal with instance
     /**
      * Fades a sound to a given volume. Can affect either a specific instance or the whole group.
      *
      * @param {string} name The name of a sound to affect. If null, all sounds are faded.
      * @param {number} newVolume The new volume from `0.0` to `1.0`.
      * @param {number} duration The duration of transition, in milliseconds.
-     * @param {number} [id] If specified, then only the given sound instance is affected.
      *
      * @returns {void}
      */
-    fade(name: string, newVolume: number, duration: number, id?:number): void {
-        // TODO: deal with id or instance
+    fade(name: string, newVolume: number, duration: number): void {
         const start = {
             time: performance.now(),
-            value: null as number
+            value: name ? resLib.sounds[name].volume : PIXI.sound.context.volume
         };
-        const soundRes = resLib.sounds[name];
-        if (name) {
-            start.value = soundRes.volume;
-        } else {
-            // Find the first playing sound and get its volume
-            // (as we can't access any kind of global volume)
-            for (const snd of Object.values(resLib.sounds) as Sound[]) {
-                if (snd.isPlaying) {
-                    start.value = snd.volume;
-                    break;
-                }
-            }
-        }
         const updateVolume = (currentTime: number) => {
             const elapsed = currentTime - start.time;
             const progress = Math.min(elapsed / duration, 1);
             const value = start.value + (newVolume - start.value) * progress;
             if (name) {
-                this.volume(name, value);
+                soundsLib.volume(name, value);
             } else {
-                this.globalVolume(value);
+                soundsLib.globalVolume(value);
             }
-
             if (progress < 1) {
                 requestAnimationFrame(updateVolume);
             }
@@ -221,25 +233,75 @@ export const soundsLib = {
         requestAnimationFrame(updateVolume);
     },
 
-    // WIP
-    removeFilter(name: string, filter: fxName): void {
-        const snd: Sound = resLib.sounds[name] as Sound;
-        const {filters} = snd;
-        if (filters && filters.length > 0) {
-            if (!filter.includes('Filter')) {
-                filter += 'Filter';
-            }
-            filters.forEach((f: Filter, i: number) => {
-                // TODO: use instanceof instead constructor name
-                if (f instanceof fxNamesToClasses[filter]) {
-                    snd.filters.splice(i, 1);
-                    const copy = snd.filters;
-                    snd.filters = copy.length > 0 ? [...copy] : void 0;
-                }
-            });
+    /**
+     * Add a filter to the specified sound. Existing filters are:
+     * DistortionFilter/EqualizerFilter/MonoFilter/ReverbFilter/StereoFilter/TelephoneFilter
+     *
+     * @param {string} name The name of a sound to affect.
+     * @param {fxName} filter The name of the filter.
+     * @param {fxConstructorOptions[T]} args Arguments depending of the filter.
+     *
+     * @returns {void}
+     */
+    addFilter<T extends fxName>(
+        sound: string | Sound,
+        filter: T,
+        ...args: fxConstructorOptions[T]
+    ): void {
+        const fx = new PIXI.sound.filters[filter as 'FilterPreserved'](...args);
+        fx.preserved = filter;
+        const snd = typeof sound === 'string' ? resLib.sounds[sound] : sound;
+        if (!snd.filters) {
+            snd.filters = [fx];
+        } else {
+            const copy = snd.filters;
+            snd.filters = [...copy, fx];
         }
     },
-    addFilter
+
+    /**
+     * Add a filter to all sounds. Existing filters are:
+     * DistortionFilter/EqualizerFilter/MonoFilter/ReverbFilter/StereoFilter/TelephoneFilter
+     *
+     * @param {fxName} filter The name of the filter.
+     * @param {fxConstructorOptions[T]} args Arguments depending of the filter.
+     *
+     * @returns {void}
+     */
+    addFilterToAll<T extends fxName>(
+        filter: T,
+        ...args: fxConstructorOptions[T]
+    ): void {
+        const fx = new PIXI.sound.filters[filter as 'FilterPreserved'](...args);
+        fx.preserved = filter;
+        const copy = PIXI.sound.filtersAll;
+        PIXI.sound.filtersAll = !PIXI.sound.filtersAll ? [fx] : [...copy, fx];
+    },
+
+    /**
+     * Remove a filter to the specified sound.
+     *
+     * @param {string} name The name of a sound to affect.
+     * @param {string} [filter] The name of the filter. If omitted, all filters are removed.
+     *
+     * @returns {void}
+     */
+    removeFilter(name: string | Sound, filter?: fxName): void {
+        const filters: [] | null = remainingFilter(name, filter);
+        const snd = typeof name === 'string' ? resLib.sounds[name as string] : name;
+        snd.filters = filters;
+    },
+
+    /**
+     * Remove a filter added with addFilterToAll().
+     *
+     * @param {string} [filter] The name of the filter. If omitted, all filters are removed.
+     *
+     * @returns {void}
+     */
+    removeFilterToAll(filter?: fxName): void {
+        PIXI.sound.filtersAll = filter ? remainingFilter(null, filter) : null;
+    }
 };
 
 export default soundsLib;
