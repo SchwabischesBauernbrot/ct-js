@@ -1,4 +1,4 @@
-import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound} from 'node_modules/@pixi/sound';
+import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound, SoundLibrary} from 'node_modules/@pixi/sound';
 import resLib from 'res';
 
 import * as pixiMod from 'node_modules/pixi.js';
@@ -179,18 +179,22 @@ export const soundsLib = {
     /**
      * Get or set the volume for a sound.
      *
-     * @param {string} name Sound's name.
+     * @param {string|IMediaInstance} name Sound's name or instance
      * @param {number} [volume] The new volume from `0.0` to `1.0`.
      * If empty, will return the existing volume.
      *
      * @returns {number} The current volume of the sound.
      */
-    volume(name: string, volume?: number): number {
-        name = `${pixiSoundPrefix}${name}`;
+    volume(name: string | IMediaInstance, volume?: number): number {
+        const pixiName = `${pixiSoundPrefix}${name}`;
         if (volume) {
-            PIXI.sound.volume(name, volume);
+            if (typeof name === 'string') {
+                PIXI.sound.volume(pixiName, volume);
+            } else {
+                (name as IMediaInstance).volume = volume;
+            }
         }
-        return PIXI.sound.volume(name);
+        return typeof name === 'string' ? PIXI.sound.volume(pixiName) : (name as IMediaInstance).volume;
     },
 
     /**
@@ -202,27 +206,35 @@ export const soundsLib = {
         PIXI.sound.volumeAll = value;
     },
 
-    // TODO: maybe deal with instance
     /**
      * Fades a sound to a given volume. Can affect either a specific instance or the whole group.
      *
-     * @param {string} name The name of a sound to affect. If null, all sounds are faded.
-     * @param {number} newVolume The new volume from `0.0` to `1.0`.
-     * @param {number} duration The duration of transition, in milliseconds.
+     * @param {string} [name] Sound's name or instance to affect. If null, all sounds are faded.
+     * @param {number} [newVolume] The new volume from `0.0` to `1.0`. Default is 0.
+     * @param {number} [duration] The duration of transition, in milliseconds. Default is 1000.
      *
      * @returns {void}
      */
-    fade(name: string, newVolume: number, duration: number): void {
+    fade(name?: string | IMediaInstance | SoundLibrary, newVolume = 0, duration = 1000): void {
         const start = {
             time: performance.now(),
-            value: name ? resLib.sounds[name].volume : PIXI.sound.context.volume
+            value: null
         };
+        if (name) {
+            if (typeof name === 'string') {
+                start.value = resLib.sounds[name].volume;
+            } else {
+                start.value = (name as IMediaInstance).volume;
+            }
+        } else {
+            start.value = PIXI.sound.context.volume;
+        }
         const updateVolume = (currentTime: number) => {
             const elapsed = currentTime - start.time;
             const progress = Math.min(elapsed / duration, 1);
             const value = start.value + (newVolume - start.value) * progress;
             if (name) {
-                soundsLib.volume(name, value);
+                soundsLib.volume(name as string | IMediaInstance, value);
             } else {
                 soundsLib.globalVolume(value);
             }
