@@ -180,7 +180,7 @@ export const soundsLib = {
      * Get or set the volume for a sound.
      *
      * @param {string|IMediaInstance} name Sound's name or instance
-     * @param {number} [volume] The new volume from `0.0` to `1.0`.
+     * @param {number} [volume] The new volume where 1 is 100%.
      * If empty, will return the existing volume.
      *
      * @returns {number} The current volume of the sound.
@@ -199,7 +199,7 @@ export const soundsLib = {
 
     /**
      * Set the global volume for all sounds.
-     * @param {number} [value] The new volume from `0.0` to `1.0`.
+     * @param {number} value The new volume where 1 is 100%.
      *
      */
     globalVolume(value: number): void {
@@ -210,7 +210,7 @@ export const soundsLib = {
      * Fades a sound to a given volume. Can affect either a specific instance or the whole group.
      *
      * @param {string} [name] Sound's name or instance to affect. If null, all sounds are faded.
-     * @param {number} [newVolume] The new volume from `0.0` to `1.0`. Default is 0.
+     * @param {number} [newVolume] The new volume where 1 is 100%. Default is 0.
      * @param {number} [duration] The duration of transition, in milliseconds. Default is 1000.
      *
      * @returns {void}
@@ -313,7 +313,37 @@ export const soundsLib = {
      */
     removeFilterToAll(filter?: fxName): void {
         PIXI.sound.filtersAll = filter ? remainingFilter(null, filter) : null;
-    }
+    },
+
+    /**
+     * Set the speed (playback rate) of a sound.
+     *
+     * @param {string|IMediaInstance} name Sound's name or instance
+     * @param {number} [value] The new speed, where 1 is 100%.
+     * If empty, will return the existing speed value.
+     *
+     * @returns {number} The current speed of the sound.
+     */
+    speed(name: string | IMediaInstance, value?: number): number {
+        const pixiName = `${pixiSoundPrefix}${name}`;
+        if (value) {
+            if (typeof name === 'string') {
+                PIXI.sound.speed(pixiName, value);
+            } else {
+                (name as IMediaInstance).speed = value;
+            }
+        }
+        return typeof name === 'string' ? PIXI.sound.speed(pixiName) : (name as IMediaInstance).speed;
+    },
+
+    /**
+     * Set the global speed (playback rate) for all sounds.
+     * @param {number} value The new speed, where 1 is 100%.
+     *
+     */
+    speedAll(value: number): void {
+        PIXI.sound.speedAll = value;
+    },
 };
 
 export default soundsLib;
