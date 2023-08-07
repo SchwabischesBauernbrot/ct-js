@@ -344,6 +344,21 @@ export const soundsLib = {
     speedAll(value: number): void {
         PIXI.sound.speedAll = value;
     },
+
+    /**
+     * Plays a variant of a sound by applying a small randomized speed value.
+     *
+     * @param {string} name Sound's name
+     * @param {number} [deviation] A higher number means a bigger variant (depends also on sound).
+     * @returns {void}
+     */
+    playVariant(name: string, deviation = 0.1): void {
+        const ran = Math.random() * deviation * (Math.random() < 0.5 ? -1 : 1);
+        soundsLib.play(name, {
+            speed: 1 + ran
+        });
+    },
+
 };
 
 export default soundsLib;
