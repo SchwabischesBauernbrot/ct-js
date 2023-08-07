@@ -34,7 +34,7 @@ type fxConstructorOptions = {
 const remainingFilter = (
     name?: string | Sound,
     filter?: fxName
-): [] | null => {
+): Filter[] => {
     // eslint-disable-next-line no-nested-ternary
     const filters = name ? (typeof name === 'string' ? resLib.sounds[name as string].filters : name.filters) : PIXI.sound.filtersAll;
     if (filters && filters.length > 0) {
@@ -48,16 +48,14 @@ const remainingFilter = (
                     copy.splice(i, 1);
                 }
             });
-            // TODO: ask CoMiGo why
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-ignore
-            return copy.length > 0 ? copy : null;
+            // return copy.length > 0 ? copy : null;
+            return copy;
         }
     }
-    return null;
+    return [];
 };
 
-const pixiSoundPrefix = 'pixiSound-';// TODO: CoMiGo: where should it be declared to be used also in res.ts
+export const pixiSoundPrefix = 'pixiSound-';
 
 export const soundsLib = {
     /**
@@ -263,7 +261,7 @@ export const soundsLib = {
         const fx = new PIXI.sound.filters[filter as 'FilterPreserved'](...args);
         fx.preserved = filter;
         const snd = typeof sound === 'string' ? resLib.sounds[sound] : sound;
-        if (!snd.filters) {
+        if (!snd.filters || snd.filters.length === 0) {
             snd.filters = [fx];
         } else {
             const copy = snd.filters;
@@ -299,7 +297,7 @@ export const soundsLib = {
      * @returns {void}
      */
     removeFilter(name: string | Sound, filter?: fxName): void {
-        const filters: [] | null = remainingFilter(name, filter);
+        const filters: Filter[] = remainingFilter(name, filter);
         const snd = typeof name === 'string' ? resLib.sounds[name as string] : name;
         snd.filters = filters;
     },
@@ -312,7 +310,7 @@ export const soundsLib = {
      * @returns {void}
      */
     removeFilterToAll(filter?: fxName): void {
-        PIXI.sound.filtersAll = filter ? remainingFilter(null, filter) : null;
+        PIXI.sound.filtersAll = filter ? remainingFilter(null, filter) : [];
     },
 
     /**

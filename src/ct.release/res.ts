@@ -1,5 +1,6 @@
 import uLib from './u';
 import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
+import {pixiSoundPrefix} from './sounds.js';
 import {TextureShape, ExportedTiledTexture, ExportedSkeleton, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
 import * as pixiMod from 'node_modules/pixi.js';
@@ -181,7 +182,7 @@ const resLib = {
         name: string = uLib.required('name', 'ct.res.loadSound'),
         preload = true
     ): Promise<string> {
-        const key = `pixiSound-${name}`;
+        const key = `${pixiSoundPrefix}${name}`;
         return new Promise<string>((resolve, reject) => {
             const asset = PIXI.sound.add(key, {
                 url: path,
