@@ -359,6 +359,22 @@ export const soundsLib = {
         });
     },
 
+    /**
+    * Toggle muted property for all sounds.
+    * @returns {boolean} `true` if all sounds are muted.
+    */
+    toggleMuteAll(): boolean {
+        return PIXI.sound.toggleMuteAll();
+    },
+
+    /**
+    * Toggle paused property for all sounds.
+    * @returns {boolean} `true` if all sounds are paused.
+    */
+    togglePauseAll(): boolean {
+        return PIXI.sound.togglePauseAll();
+    }
+
 };
 
 export default soundsLib;
