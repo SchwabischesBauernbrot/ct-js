@@ -48,7 +48,6 @@ const remainingFilter = (
                     copy.splice(i, 1);
                 }
             });
-            // return copy.length > 0 ? copy : null;
             return copy;
         }
     }
@@ -68,7 +67,7 @@ export const soundsLib = {
     async load(name: string): Promise<string> {
         const key = `${pixiSoundPrefix}${name}`;
         if (!PIXI.Assets.cache.has(key)) {
-            throw new Error(`[sounds.load] Sound ${name} was not found. Is it a typo? Did you mean to use res.loadSound instead?`);
+            throw new Error(`[sounds.load] Sound "${name}" was not found. Is it a typo? Did you mean to use res.loadSound instead?`);
         }
         await PIXI.Assets.load<Sound>(key);
         return name;
@@ -87,13 +86,16 @@ export const soundsLib = {
      * @param {boolean} options.muted If sound instance is muted by default.
      * @param {boolean} options.singleInstance Setting true will stop any playing instances.
      * @param {number} options.speed Override default speed, default to the Sound's speed setting.
-     * @param {string} options.sprite The sprite to play.
      * @param {number} options.start Start time offset in seconds.
      * @param {number} options.volume Override default volume.
      * @returns Either a sound instance, or a promise that resolves into a sound instance.
      */
     play(name: string, options?: PlayOptions): Promise<IMediaInstance> | IMediaInstance {
-        return resLib.sounds[name].play(options);
+        if (!soundsLib.exists(name)) {
+            throw new Error(`[sounds.play] Sound "${name}" was not found. Is it a typo?`);
+        } else {
+            return resLib.sounds[name].play(options);
+        }
     },
 
     /**
@@ -309,7 +311,7 @@ export const soundsLib = {
      *
      * @returns {void}
      */
-    removeFilterToAll(filter?: fxName): void {
+    removeFilterFromAll(filter?: fxName): void {
         PIXI.sound.filtersAll = filter ? remainingFilter(null, filter) : [];
     },
 
