@@ -36,6 +36,7 @@
         "open": "Open",
         "paste": "Paste",
         "pastedFromClipboard": "Pasted from clipboard",
+        "play": "Play",
         "previous": "Previous",
         "rename": "Rename",
         "required": "Required",
@@ -945,11 +946,19 @@
         "offY": "Offset Y:"
     },
     "soundView": {
-        "import": "Import",
         "name": "Name:",
-        "save": "Save",
-        "isMusicFile": "This is a musical track",
-        "poolSize": "Pool size:"
+        "addVariant": "Add a variant",
+        "preload": "Load on game start",
+        "volume": "Volume",
+        "pitch": "Pitch",
+        "distortion": "Distortion",
+        "effects": "Effects",
+        "reverb": "Reverb",
+        "reverbDuration": "Duration",
+        "reverbDecay": "Decay",
+        "reverseReverb": "Reverse",
+        "equalizer": "Enter",
+        "hertz": "Hz"
     },
     "fontView": {
         "italic": "Is italic?",

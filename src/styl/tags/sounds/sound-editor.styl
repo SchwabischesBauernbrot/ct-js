@@ -1,13 +1,27 @@
-sound-editor
-    .aModal
-        padding 1em calc(1em + 0.5px)
-        width 21em
-        vertical-align middle
-        background background
-        color text
-    if (themeDark)
-        audio
-            filter invert(1)
+.sound-editor-aFilter
+    & > .checkbox
+        width 10rem
+        flex-grow 0
+    range-selector
+        display block
+        padding-right 2px
+        box-sizing border-box
+    range-selector + range-selector
+        margin-top 0.5rem
+    & + .sound-editor-aFilter
+        margin-top 0.75rem
+
+.sound-editor-Columns
+    align-items stretch
+
+.sound-editor-aBand
+    width 3rem
+    flex-grow 0
+
+.sound-editor-aWrapper
+    max-width 1200px
+    width 100%
+    margin 0 auto
 
 sounds-panel .Cards img
     border 0 none !important
