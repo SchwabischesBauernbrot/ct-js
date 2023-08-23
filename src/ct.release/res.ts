@@ -1,7 +1,7 @@
-import uLib from './u';
+import {required} from './u';
 import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
-import {pixiSoundPrefix} from './sounds.js';
-import {TextureShape, ExportedTiledTexture, ExportedSkeleton, ExportedSound} from '../node_requires/exporter/_exporterContracts';
+import {pixiSoundPrefix, sounds} from './sounds.js';
+import type {TextureShape, ExportedTiledTexture, ExportedSkeleton, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
 import * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
@@ -34,14 +34,17 @@ export interface ITextureOptions {
 const loadingScreen = document.querySelector('.ct-aLoadingScreen') as HTMLDivElement,
       loadingBar = loadingScreen.querySelector('.ct-aLoadingBar') as HTMLDivElement;
 
+export const textures: Record<string, CtjsAnimation> = {};
+export const skeletons: Record<string, any> = {};
+
 /**
  * An object that manages and stores textures and other assets,
  * also exposing API for dynamic asset loading.
  */
 const resLib = {
-    sounds: {} as Record<string, Sound>,
-    textures: {} as Record<string, CtjsAnimation>,
-    skeletons: {} as Record<string, any>,
+    sounds,
+    textures,
+    skeletons,
     groups: [/*!@resourceGroups@*/][0] as Record<string, string[]>,
     /**
      * Loads and executes a script by its URL
@@ -50,7 +53,7 @@ const resLib = {
      * @returns {Promise<void>}
      * @async
      */
-    loadScript(url: string = uLib.required('url', 'ct.res.loadScript')): Promise<void> {
+    loadScript(url: string = required('url', 'ct.res.loadScript')): Promise<void> {
         var script = document.createElement('script');
         script.src = url;
         const promise = new Promise<void>((resolve, reject) => {
@@ -74,8 +77,8 @@ const resLib = {
      * @returns {Promise<CtjsAnimation>} The imported animation, ready to be used.
      */
     async loadTexture(
-        url: string = uLib.required('url', 'ct.res.loadTexture'),
-        name: string = uLib.required('name', 'ct.res.loadTexture'),
+        url: string = required('url', 'ct.res.loadTexture'),
+        name: string = required('name', 'ct.res.loadTexture'),
         textureOptions: ITextureOptions = {}
     ): Promise<CtjsAnimation> {
         let texture: CtjsTexture;
@@ -103,8 +106,8 @@ const resLib = {
      * @returns The name of the imported animation.
      */
     async loadSkeleton(
-        skel: string = uLib.required('skel', 'ct.res.loadSkeleton'),
-        name: string = uLib.required('name', 'ct.res.loadSkeleton'),
+        skel: string = required('skel', 'ct.res.loadSkeleton'),
+        name: string = required('name', 'ct.res.loadSkeleton'),
         txt = true
     ): Promise<string> {
         PIXI.Assets.add(skel, skel, {
@@ -123,7 +126,7 @@ const resLib = {
      * @returns A promise that resolves into an array
      * of all the loaded textures' names.
      */
-    async loadAtlas(url: string = uLib.required('url', 'ct.res.loadAtlas')): Promise<string[]> {
+    async loadAtlas(url: string = required('url', 'ct.res.loadAtlas')): Promise<string[]> {
         const sheet = await PIXI.Assets.load<pixiMod.Spritesheet>(url);
         for (const animation in sheet.animations) {
             const tex = sheet.animations[animation];
@@ -145,7 +148,7 @@ const resLib = {
      * it has introduced to the game.
      * Will do nothing if the specified atlas was not loaded (or was already unloaded).
      */
-    async unloadAtlas(url: string = uLib.required('url', 'ct.res.unloadAtlas')): Promise<void> {
+    async unloadAtlas(url: string = required('url', 'ct.res.unloadAtlas')): Promise<void> {
         const {animations} = PIXI.Assets.get(url);
         if (!animations) {
             // eslint-disable-next-line no-console
@@ -162,10 +165,10 @@ const resLib = {
      * @param url The path to the XML file that describes the bitmap fonts.
      * @returns A promise that resolves into the font's name (the one you've passed with `name`).
      */
-    async loadBitmapFont(url: string = uLib.required('url', 'ct.res.loadBitmapFont')): Promise<void> {
+    async loadBitmapFont(url: string = required('url', 'ct.res.loadBitmapFont')): Promise<void> {
         await PIXI.Assets.load(url);
     },
-    async unloadBitmapFont(url: string = uLib.required('url', 'ct.res.unloadBitmapFont')): Promise<void> {
+    async unloadBitmapFont(url: string = required('url', 'ct.res.unloadBitmapFont')): Promise<void> {
         await PIXI.Assets.unload(url);
     },
     /**
@@ -178,8 +181,8 @@ const resLib = {
      * @returns A promise with the name of the imported sound.
      */
     loadSound(
-        path: string = uLib.required('path', 'ct.res.loadSound'),
-        name: string = uLib.required('name', 'ct.res.loadSound'),
+        path: string = required('path', 'ct.res.loadSound'),
+        name: string = required('name', 'ct.res.loadSound'),
         preload = true
     ): Promise<string> {
         const key = `${pixiSoundPrefix}${name}`;

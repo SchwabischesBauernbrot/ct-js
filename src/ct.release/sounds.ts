@@ -1,5 +1,4 @@
 import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound, SoundLibrary} from 'node_modules/@pixi/sound';
-import resLib from 'res';
 
 import * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
@@ -14,7 +13,7 @@ type FilterPreserved = Filter & {
 
 type fxName = Exclude<keyof typeof pixiSoundFilters, 'Filter' | 'StreamFilter'>;
 const fxNames = Object.keys(pixiSoundFilters)
-                .filter((name: keyof typeof pixiSoundFilters) => name !== 'Filter' && name !== 'StreamFilter');
+.filter((name: keyof typeof pixiSoundFilters) => name !== 'Filter' && name !== 'StreamFilter');
 const fxNamesToClasses = {} as {
     [T in fxName]: typeof pixiSoundFilters[T]
 };
@@ -24,6 +23,8 @@ for (const fxName of fxNames) {
 type fxConstructorOptions = {
     [T in fxName]: ConstructorParameters<typeof pixiSoundFilters[T]>
 }
+
+export const sounds: Record<string, Sound> = {};
 
 /**
  * Used for removing filter
@@ -36,7 +37,7 @@ const remainingFilter = (
     filter?: fxName
 ): Filter[] => {
     // eslint-disable-next-line no-nested-ternary
-    const filters = name ? (typeof name === 'string' ? resLib.sounds[name as string].filters : name.filters) : PIXI.sound.filtersAll;
+    const filters = name ? (typeof name === 'string' ? sounds[name as string].filters : name.filters) : PIXI.sound.filtersAll;
     if (filters && filters.length > 0) {
         if (!filter.includes('Filter')) {
             filter += 'Filter';
@@ -94,7 +95,7 @@ export const soundsLib = {
         if (!soundsLib.exists(name)) {
             throw new Error(`[sounds.play] Sound "${name}" was not found. Is it a typo?`);
         } else {
-            return resLib.sounds[name].play(options);
+            return sounds[name].play(options);
         }
     },
 
@@ -157,7 +158,7 @@ export const soundsLib = {
      * @returns {boolean}
      */
     exists(name: string): boolean {
-        return (name in resLib.sounds);
+        return (name in sounds);
     },
 
     /**
@@ -169,7 +170,7 @@ export const soundsLib = {
      * @returns {boolean} `true` if the sound is playing, `false` otherwise.
      */
     playing(name?: string): boolean {
-        const snd: Sound = resLib.sounds[name] as Sound;
+        const snd: Sound = sounds[name] as Sound;
         if (name) {
             return snd.isPlaying;
         }
@@ -209,11 +210,9 @@ export const soundsLib = {
     /**
      * Fades a sound to a given volume. Can affect either a specific instance or the whole group.
      *
-     * @param {string} [name] Sound's name or instance to affect. If null, all sounds are faded.
-     * @param {number} [newVolume] The new volume where 1 is 100%. Default is 0.
-     * @param {number} [duration] The duration of transition, in milliseconds. Default is 1000.
-     *
-     * @returns {void}
+     * @param [name] Sound's name or instance to affect. If null, all sounds are faded.
+     * @param [newVolume] The new volume where 1 is 100%. Default is 0.
+     * @param [duration] The duration of transition, in milliseconds. Default is 1000.
      */
     fade(name?: string | IMediaInstance | SoundLibrary, newVolume = 0, duration = 1000): void {
         const start = {
@@ -222,7 +221,7 @@ export const soundsLib = {
         };
         if (name) {
             if (typeof name === 'string') {
-                start.value = resLib.sounds[name].volume;
+                start.value = sounds[name].volume;
             } else {
                 start.value = (name as IMediaInstance).volume;
             }
@@ -249,11 +248,9 @@ export const soundsLib = {
      * Add a filter to the specified sound. Existing filters are:
      * DistortionFilter/EqualizerFilter/MonoFilter/ReverbFilter/StereoFilter/TelephoneFilter
      *
-     * @param {string} name The name of a sound to affect.
+     * @param name The name of a sound to affect.
      * @param {fxName} filter The name of the filter.
      * @param {fxConstructorOptions[T]} args Arguments depending of the filter.
-     *
-     * @returns {void}
      */
     addFilter<T extends fxName>(
         sound: string | Sound,
@@ -262,7 +259,7 @@ export const soundsLib = {
     ): void {
         const fx = new PIXI.sound.filters[filter as 'FilterPreserved'](...args);
         fx.preserved = filter;
-        const snd = typeof sound === 'string' ? resLib.sounds[sound] : sound;
+        const snd = typeof sound === 'string' ? sounds[sound] : sound;
         if (!snd.filters || snd.filters.length === 0) {
             snd.filters = [fx];
         } else {
@@ -300,7 +297,7 @@ export const soundsLib = {
      */
     removeFilter(name: string | Sound, filter?: fxName): void {
         const filters: Filter[] = remainingFilter(name, filter);
-        const snd = typeof name === 'string' ? resLib.sounds[name as string] : name;
+        const snd = typeof name === 'string' ? sounds[name as string] : name;
         snd.filters = filters;
     },
 

@@ -241,6 +241,19 @@ const buildCtJsLib = () => {
     ]).pipe(gulp.dest('./app/data/ct.release')));
     return Promise.all(processes);
 };
+const buildCtIdeSoundLib = () => esbuild({
+    entryPoints: ['./src/ct.release/sounds.ts'],
+    outfile: './app/data/ct.shared/ctSound.js',
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    treeShaking: true,
+    external: [
+        'node_modules/pixi.js',
+        'node_modules/pixi-spine',
+        'node_modules/@pixi/sound'
+    ]
+});
 const watchCtJsLib = () => {
     gulp.watch([
         './src/ct.release/**/*',
@@ -421,6 +434,7 @@ const build = gulp.parallel([
     processRequires,
     copyInEditorDocs,
     buildCtJsLib,
+    buildCtIdeSoundLib,
     bakeTypedefs,
     bakeCtTypedefs
 ]);
@@ -599,6 +613,7 @@ exports.lintI18n = lintI18n;
 exports.lint = lint;
 
 exports.buildCtJsLib = buildCtJsLib;
+exports.buildCtIdeSoundLib = buildCtIdeSoundLib;
 
 exports.packages = packages;
 exports.nwbuild = bakePackages;
