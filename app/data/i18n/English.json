@@ -957,7 +957,7 @@
         "reverbDuration": "Duration",
         "reverbDecay": "Decay",
         "reverseReverb": "Reverse",
-        "equalizer": "Enter",
+        "equalizer": "Equalizer",
         "hertz": "Hz"
     },
     "fontView": {

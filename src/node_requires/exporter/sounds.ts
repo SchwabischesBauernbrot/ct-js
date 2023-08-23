@@ -12,10 +12,8 @@ type exportedSoundData = {
 
 export const getSounds = (proj: IProject): exportedSoundData[] => {
     const sounds: exportedSoundData[] = [];
-    /*
     for (const s of proj.sounds) {
-
-        if (!s.origname) {
+        if (!s.name) {
             const errorMessage = `The sound asset "${s.name}" does not have an actual sound file attached.`;
             const exporterError = new ExporterError(errorMessage, {
                 resourceId: s.uid,
@@ -36,13 +34,11 @@ export const getSounds = (proj: IProject): exportedSoundData[] => {
         //     poolSize: s.poolSize || 5,
         //     isMusic: Boolean(s.isMusic)
         // } as exportedSoundData);
+
         sounds.push({
             name: s.name,
-            path: `./snd/${s.uid}.${s.origname.slice(-3)}`,
-            poolSize: s.poolSize || 5,
-            isMusic: Boolean(s.isMusic)
+            path: `./snd/${s.uid}.${s.name.slice(-3)}`
         } as exportedSoundData);
     }
-    */
     return sounds;
 };

@@ -1,3 +1,4 @@
+/* eslint no-use-before-define: 0 */
 import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound, SoundLibrary} from 'node_modules/@pixi/sound';
 
 import * as pixiMod from 'node_modules/pixi.js';

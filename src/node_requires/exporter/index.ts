@@ -428,11 +428,10 @@ const exportCtProject = async (
         fs.writeFile(path.join(writeDir, cssBundleFilename), css),
         fs.writeFile(path.join(writeDir, jsBundleFilename), buffer)
     ]);
-    /*
     await Promise.all(project.sounds.map(async (sound: ISound) => {
-        const ext = sound.origname.slice(-4);
-        await fs.copy(path.join(projdir, '/snd/', sound.origname), path.join(writeDir, '/snd/', sound.uid + ext));
-    }));*/
+        const ext = sound.name.slice(-4);
+        await fs.copy(path.join(projdir, '/snd/', sound.name), path.join(writeDir, '/snd/', sound.uid + ext));
+    }));
     // TODO: Update for sound cues
 
     return path.join(writeDir, '/index.html');

@@ -1,7 +1,7 @@
 const path = require('path'),
       fs = require('fs-extra');
 
-import pixiSounds from 'node_modules/@pixi/sound';
+import {sound, utils as pixiSoundUtils, Sound as pixiSoundSound} from 'node_modules/@pixi/sound';
 import {Sprite, Texture, Application} from 'node_modules/pixi.js';
 import {outputCanvasToFile} from '../../utils/imageUtils';
 
@@ -14,8 +14,8 @@ const getById = function getById(id: string): ISound {
 };
 
 /**
- * Retrieves the full path to a thumbnail of a given texture.
- * @param {string|ISound} texture Either the id of the texture, or its ct.js object
+ * Retrieves the full path to a thumbnail of a given sound variation.
+ * @param {string|ISound} sound Sound's name, or the sound instance.
  * @param {boolean} [x2] If set to true, returns a 128x128 image instead of 64x64.
  * @param {boolean} [fs] If set to true, returns a file system path, not a URI.
  * @returns {string} The full path to the thumbnail.
@@ -32,9 +32,9 @@ const getThumbnail = (
         sound = getById(sound);
     }
     if (fs) {
-        return `${global.projdir}/snd/${sound.uid}_prev${x2 ? '@2' : ''}.png`;
+        return `${global.projdir}/snd/s${sound.uid}_prev${x2 ? '@2' : ''}.png`;
     }
-    return `file:///${global.projdir.replace(/\\/g, '/')}/snd/${sound.uid}_prev${x2 ? '@2' : ''}.png`;
+    return `file:///${global.projdir.replace(/\\/g, '/')}/snd/s${sound.uid}_prev${x2 ? '@2' : ''}.png`;
 };
 
 const createNewSound = function (name?: string): ISound {
@@ -90,11 +90,11 @@ const makeThumbnail = (
 ): Promise<string> => new Promise((resolve, reject) => {
     setTimeout(() => {
         try {
-            const sound = pixiSounds.Sound.from({
+            const sound = pixiSoundSound.from({
                 url: file,
                 preload: true,
                 loaded: async () => {
-                    const base = pixiSounds.utils.render(sound, {
+                    const base = pixiSoundUtils.render(sound, {
                         height: x2 ? 128 : 64,
                         width: x2 ? 128 : 64,
                         fill: 'white'
@@ -115,10 +115,12 @@ const makeThumbnail = (
 });
 
 const addSoundFile = async function addSoundFile(sound: ISound, file: string): Promise<void> {
-    // TODO: remove the use of it
     try {
         sound.lastmod = Number(new Date());
         await fs.copy(file, (global as any).projdir + '/snd/s' + sound.uid + path.extname(file));
+        // await this.makeThumbnail(file, howToGetThePath);
+        // await this.makeThumbnail(file, `${global.projdir}/snd/s${sound.uid}_${variation.uid}.png`);// TODO: we'll need the variation uid
+        await this.makeThumbnail(file, `${global.projdir}/snd/s${sound.uid}_prev.png`);
     } catch (e) {
         console.error(e);
         (window as Window).alertify.error(e);
@@ -126,10 +128,19 @@ const addSoundFile = async function addSoundFile(sound: ISound, file: string): P
     }
 };
 
+const loadSound = (path: string, name: string): ISound => {
+    const pixiSoundPrefix = 'pixiSound-';// should be imported from src\ct.release\sounds.ts but it seems i can't
+    const key = `${pixiSoundPrefix}${name}`;
+    return sound.add(key, {
+        url: path
+    }) as unknown as ISound;// TODO fix the type
+};
+
 export {
     getThumbnail,
     makeThumbnail,
     getById,
     createNewSound,
-    addSoundFile
+    addSoundFile,
+    loadSound
 };
