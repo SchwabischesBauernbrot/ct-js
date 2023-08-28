@@ -24,7 +24,7 @@ sounds-panel.aPanel.aView
             svg.feather
                 use(xlink:href="#mic")
             span {parent.voc.record}
-    sound-editor(if="{editing}" sound="{editedSound}")
+    sound-editor(if="{editing}" asset="{editedSound}")
     sound-recorder(if="{recorderVisible}" onclose="{onCloseRecorder}" group="{refs.sounds.currentGroup.uid}")
     context-menu(menu="{soundMenu}" ref="soundMenu")
     builtin-asset-gallery(if="{showingGallery}" type="sounds" onclose="{closeGallery}")

@@ -430,6 +430,11 @@ const exportCtProject = async (
     ]);
     await Promise.all(project.sounds.map(async (sound: ISound) => {
         const ext = sound.name.slice(-4);
+        // TODO: have to deal with uid not name and deal with variant
+        console.log(sound)
+        console.log("sound.uid", sound.uid)
+        console.log("sound.name", sound.name)
+        console.log("ext", ext)
         await fs.copy(path.join(projdir, '/snd/', sound.name), path.join(writeDir, '/snd/', sound.uid + ext));
     }));
     // TODO: Update for sound cues

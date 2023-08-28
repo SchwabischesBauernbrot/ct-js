@@ -16,12 +16,14 @@ const getById = function getById(id: string): ISound {
 /**
  * Retrieves the full path to a thumbnail of a given sound variation.
  * @param {string|ISound} sound Sound's name, or the sound instance.
+ * @param {string|ISound} variantUid Variant's uid.
  * @param {boolean} [x2] If set to true, returns a 128x128 image instead of 64x64.
  * @param {boolean} [fs] If set to true, returns a file system path, not a URI.
  * @returns {string} The full path to the thumbnail.
  */
 const getThumbnail = (
     sound: assetRef | ISound,
+    variantUid: string,
     x2?: boolean,
     fs?: boolean
 ): string => {
@@ -32,9 +34,9 @@ const getThumbnail = (
         sound = getById(sound);
     }
     if (fs) {
-        return `${global.projdir}/snd/s${sound.uid}_prev${x2 ? '@2' : ''}.png`;
+        return `${global.projdir}/snd/s${sound.uid}_${variantUid}_prev${x2 ? '@2' : ''}.png`;
     }
-    return `file:///${global.projdir.replace(/\\/g, '/')}/snd/s${sound.uid}_prev${x2 ? '@2' : ''}.png`;
+    return `file:///${global.projdir.replace(/\\/g, '/')}/snd/s${sound.uid}_${variantUid}_prev${x2 ? '@2' : ''}.png`;
 };
 
 const createNewSound = function (name?: string): ISound {
@@ -116,11 +118,17 @@ const makeThumbnail = (
 
 const addSoundFile = async function addSoundFile(sound: ISound, file: string): Promise<void> {
     try {
+        const generateGUID = require('./../../generateGUID');
+        const uid = generateGUID();
         sound.lastmod = Number(new Date());
-        await fs.copy(file, (global as any).projdir + '/snd/s' + sound.uid + path.extname(file));
-        // await this.makeThumbnail(file, howToGetThePath);
-        // await this.makeThumbnail(file, `${global.projdir}/snd/s${sound.uid}_${variation.uid}.png`);// TODO: we'll need the variation uid
-        await this.makeThumbnail(file, `${global.projdir}/snd/s${sound.uid}_prev.png`);
+        const variant: soundVariant = {
+            uid,
+            source: file
+        };
+        sound.variants.push(variant);
+        const basePath: string = `${(global as any).projdir}/snd/s${sound.uid}_${variant.uid}` as string;
+        await fs.copy(file, `${basePath}${path.extname(file)}`);
+        await this.makeThumbnail(file, `${basePath}_prev.png`);// TODO more sizes
     } catch (e) {
         console.error(e);
         (window as Window).alertify.error(e);
@@ -129,11 +137,10 @@ const addSoundFile = async function addSoundFile(sound: ISound, file: string): P
 };
 
 const loadSound = (path: string, name: string): ISound => {
-    const pixiSoundPrefix = 'pixiSound-';// should be imported from src\ct.release\sounds.ts but it seems i can't
-    const key = `${pixiSoundPrefix}${name}`;
-    return sound.add(key, {
+    const asset = sound.add(name, {
         url: path
     }) as unknown as ISound;// TODO fix the type
+    return asset;
 };
 
 export {
