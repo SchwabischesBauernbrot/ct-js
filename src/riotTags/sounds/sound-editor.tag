@@ -108,7 +108,8 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                                 )
         b {voc.name}
         br
-        input.wide(type="text" value="{asset.name}" onchange="{wire('asset.name')}")
+        input.wide(type="text" value="{asset.name}" onchange="{wire('this.asset.name')}")
+        .anErrorNotice(if="{nameTaken}" ref="errorNotice") {vocGlob.nameTaken}
     .flexfix-footer
         p.nmb
             button.wide(onclick="{soundSave}" title="Shift+Control+S" data-hotkey="Control+S")
@@ -126,7 +127,15 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
 
         this.currentWaveformPath = [];
 
-        console.log("13 xx")
+        this.on('update', () => {
+            const sound = global.currentProject.sounds.find(sound => 
+                this.asset.name === sound.name && this.asset !== sound);
+            if (sound) {
+                this.nameTaken = true;
+            } else {
+                this.nameTaken = false;
+            }
+        });
 
         this.swatches = require('./data/node_requires/themes').getSwatches();
 
@@ -184,4 +193,22 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         };
         this.setEq = e => {
     
+        };
+
+        this.soundSave = () => {
+            if (this.nameTaken) {
+                // animate the error notice
+                require('./data/node_requires/jellify')(this.refs.errorNotice);
+                const {soundbox} = require('./data/node_requires/3rdparty/soundbox');
+                soundbox.play('Failure');
+                return false;
+            }
+            // TODO: i need this
+            //- if (this.playing) {
+            //-     this.togglePlay();
+            //- }
+            this.parent.editing = false;
+            this.parent.update();
+            require('./data/node_requires/glob').modified = true;
+            return true;
         };
