@@ -75,7 +75,7 @@ const createNewSound = function (name?: string): ISound {
         },
         eq: {
             enabled: false,
-            bands: Array(10).map<randomized>(() => ({
+            bands: Array(10).fill(({
                 min: 0,
                 max: 1
             }) as randomized) as eqBands

@@ -41,7 +41,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 virtual(each="{prop in ['volume', 'pitch', 'distortion']}")
                     .flexrow.sound-editor-aFilter
                         label.checkbox
-                            input(type="checkbox" checked="{asset[prop].enabled}")
+                            input(type="checkbox" checked="{asset[prop].enabled}" onchange="{toggleCheckbox(prop)}")
                             b {voc[prop]}
                         range-selector(
                             hide-label="hide-label" hide-legend="hide-legend"
@@ -56,7 +56,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                         )
                 .flexrow.sound-editor-aFilter
                     label.checkbox
-                        input(type="checkbox" checked="{asset.reverb.enabled}")
+                        input(type="checkbox" checked="{asset.reverb.enabled}" onchange="{toggleCheckbox('reverb')}")
                         b {voc.reverb}
                     div
                         span {voc.reverbDuration}
@@ -64,7 +64,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             hide-label="hide-label" hide-legend="hide-legend"
                             min="0" max="200"
                             preset-min="{asset.reverb.secondsMin}" preset-max="{asset.reverb.secondsMax}"
-                            onrange-changed="{setReverbDuration}"
+                            onrange-changed="{setProp('reverb', 'seconds')}"
                             circle-focus-border="2px solid {swatches.act}"
                             circle-color="{swatches.act}"
                             circle-border="0"
@@ -76,7 +76,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             hide-label="hide-label" hide-legend="hide-legend"
                             min="0" max="200"
                             preset-min="{asset.reverb.decayMin}" preset-max="{asset.reverb.decayMax}"
-                            onrange-changed="{setReverbDecay}"
+                            onrange-changed="{setProp('reverb', 'decay')}"
                             circle-focus-border="2px solid {swatches.act}"
                             circle-color="{swatches.act}"
                             circle-border="0"
@@ -84,11 +84,11 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             circle-size="24px"
                         )
                         label.checkbox
-                            input(type="checkbox" checked="{asset.reverb.enabled}")
+                            input(type="checkbox" checked="{asset.reverb.reverse}" onchange="{toggleCheckbox('reverse')}")
                             b {voc.reverseReverb}
                 .flexrow.sound-editor-aFilter
                     label.checkbox
-                        input(type="checkbox" checked="{asset.eq.enabled}")
+                        input(type="checkbox" checked="{asset.eq.enabled}" onchange="{toggleCheckbox('eq')}")
                         b {voc.equalizer}
                     div
                         - var frequences = ['32', '64', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
@@ -98,8 +98,8 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                                 range-selector(
                                     hide-label="hide-label" hide-legend="hide-legend"
                                     min="0" max="200"
-                                    preset-min=`asset.eq[${val}].min` preset-max="asset.eq[${val}].max"
-                                    onrange-changed=`{setEq(${val})}`
+                                    preset-min=`{asset.eq.bands[${val}].min}` preset-max=`{asset.eq.bands[${val}].max}`
+                                    onrange-changed=`{setProp('eq', ${val})}`
                                     circle-focus-border="2px solid {swatches.act}"
                                     circle-color="{swatches.act}"
                                     circle-border="0"
@@ -182,17 +182,31 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             this.update();
         }
 
-        this.setProp = e => {
+        this.toggleCheckbox = prop => e => {
+            if(prop === 'reverse') {
+                this.asset.reverb[prop] = !this.asset.reverb[prop];    
+            }
+            else {
+                this.asset[prop].enabled = !this.asset[prop].enabled;
+            }
+        }
 
-        };
-        this.setReverbDuration = e => {
-    
-        };
-        this.setReverbDecay = e => {
-    
-        };
-        this.setEq = e => {
-    
+        this.setProp = (prop, arg = null) => e => {
+            const { minRangeValue: min, maxRangeValue: max } = e.detail;
+            if(arg !== null) {
+                if(prop === "eq") {
+                    this.asset[prop].bands[parseInt(arg)] = {
+                        min,
+                        max
+                    };
+                } else {
+                    this.asset[prop][arg + 'Min'] = min;
+                    this.asset[prop][arg + 'Max'] = max;
+                }
+            } else {
+                this.asset[prop].min = min;
+                this.asset[prop].max = max;                
+            }
         };
 
         this.soundSave = () => {
