@@ -19,7 +19,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             img(src="{currentWaveformPath[sound.uid]}")
                         button.square.nogrow.large(onclick="{togglePlay(sound)}" title="{vocGlob.play}")
                             svg.feather
-                                use(xlink:href="#{playing ? 'pause' : 'play'}")
+                                use(xlink:href="#{playing(sound.uid) ? 'pause' : 'play'}")
                         button.square.nogrow(title="{vocGlob.reimport}")
                             svg.feather
                                 use(xlink:href="#refresh-ccw")
@@ -119,11 +119,15 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
     
     script.
         const path = require('path');
+        const soundResMethods = require('./data/node_requires/resources/sounds');
+        const { sounds: allSounds, soundsLib, pixiSoundPrefix } = require('./data/ct.shared/ctSound');
         this.namespace = 'soundView';
         this.mixin(window.riotVoc);
         this.mixin(window.riotWired);
-        this.playing = false;
+        this.currentSoundPlaying = null;
         this.asset = this.opts.asset;
+
+        console.log("11h_25")
 
         this.currentWaveformPath = [];
 
@@ -155,18 +159,41 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             this.asset.variants = newVariants;
         };
 
-        this.togglePlay = variant => e => {
-            const { sounds: allSounds, soundsLib, pixiSoundPrefix } = require('./data/ct.shared/ctSound');
-            const soundResMethods = require('./data/node_requires/resources/sounds');
-            const soundName = `${pixiSoundPrefix}${this.asset.name}_${variant.uid}`;
-            if(!soundsLib.exists(soundName)) {
-                allSounds[soundName] = soundResMethods.loadSound(variant.source, soundName);    
+        this.defineSoundName = variantUid => {
+            return `${pixiSoundPrefix}${this.asset.name}_${variantUid}`;
+        }
+
+        this.stop = () => {
+            if(this.currentSoundPlaying) {
+                soundsLib.stop(this.currentSoundPlaying);
+                this.currentSoundPlaying = null;                
             }
-            // TODO: this is probably wrong (because of the api or because have to check if playing/paused/something else)
-            if(soundsLib.playing(soundName)) {
-                soundsLib.stop(soundName);
+        }
+
+        this.play = variantUid => {
+            this.stop();
+            const soundName = this.defineSoundName(variantUid);
+            this.currentSoundPlaying = soundName.replace(pixiSoundPrefix, "");
+            soundsLib.play(soundName);
+        }
+
+        this.playing = variantUid => {
+            if(this.currentSoundPlaying !== null) {
+                return soundsLib.playing(this.defineSoundName(variantUid));        
+            }
+            return false;
+        }
+
+        this.togglePlay = variant => e => {
+            // TODO/WIP: use callback to know when the sound finished "itself" from playing 
+            const soundName = this.defineSoundName(variant.uid);
+            if(!soundsLib.exists(soundName)) {
+                allSounds[soundName] = soundResMethods.loadSound(variant.source, soundName);
+            }
+            if(this.currentSoundPlaying === soundName.replace(pixiSoundPrefix, "")) {
+                this.stop();
             } else {
-                soundsLib.play(soundName);
+                this.play(variant.uid);    
             }
         }
 
@@ -217,10 +244,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 soundbox.play('Failure');
                 return false;
             }
-            // TODO: i need this
-            //- if (this.playing) {
-            //-     this.togglePlay();
-            //- }
+            this.stop();
             this.parent.editing = false;
             this.parent.update();
             require('./data/node_requires/glob').modified = true;

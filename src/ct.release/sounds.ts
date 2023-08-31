@@ -171,11 +171,14 @@ export const soundsLib = {
      * @returns {boolean} `true` if the sound is playing, `false` otherwise.
      */
     playing(name?: string): boolean {
-        const snd: Sound = sounds[name] as Sound;
-        if (name) {
-            return snd.isPlaying;
+        if (soundsLib.exists(name)) {
+            const snd: Sound = sounds[name] as Sound;
+            if (name) {
+                return snd.isPlaying;
+            }
+            return PIXI.sound.isPlaying();
         }
-        return PIXI.sound.isPlaying();
+        return false;
     },
 
     /**
