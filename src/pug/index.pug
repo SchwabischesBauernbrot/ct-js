@@ -87,6 +87,7 @@ html
             window.hotkeys = require('./data/node_requires/hotkeys')(document);
             window.PIXI = require('pixi.js');
             window.PIXI.sound = require('@pixi/sound').sound;
+            window.PIXI.sound.filters = require('@pixi/sound').sound.filters;
             riot.mount('*');
             setTimeout(() => {
                 document.getElementById('theLoadingScreen').remove();

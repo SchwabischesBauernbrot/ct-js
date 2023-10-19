@@ -1,17 +1,9 @@
 import {ExporterError} from './ExporterError';
+import {ExportedSound} from './_exporterContracts';
 
-type exportedSoundData = {
-    name: string;
-    path: string;
-    // wav: string | false;
-    // mp3: string | false;
-    // ogg: string | false;
-    poolSize: number;
-    isMusic: boolean;
-};
 
-export const getSounds = (proj: IProject): exportedSoundData[] => {
-    const sounds: exportedSoundData[] = [];
+export const getSounds = (proj: IProject): ExportedSound[] => {
+    const sounds: ExportedSound[] = [];
     for (const s of proj.sounds) {
         if (!s.name) {
             const errorMessage = `The sound asset "${s.name}" does not have an actual sound file attached.`;
@@ -37,8 +29,17 @@ export const getSounds = (proj: IProject): exportedSoundData[] => {
 
         sounds.push({
             name: s.name,
-            path: `./snd/${s.uid}.${s.name.slice(-3)}`
-        } as exportedSoundData);
+            variants: s.variants.map((v) => ({
+                uid: v.uid,
+                source: `./snd/${v.uid}.${v.source.slice(-3)}`
+            })),
+            preload: s.preload,
+            volume: (s.volume.enabled && s.volume) || void 0,
+            pitch: (s.pitch.enabled && s.pitch) || void 0,
+            distortion: (s.distortion.enabled && s.distortion) || void 0,
+            reverb: (s.reverb.enabled && s.reverb) || void 0,
+            eq: (s.eq.enabled && s.eq) || void 0
+        });
     }
     return sounds;
 };

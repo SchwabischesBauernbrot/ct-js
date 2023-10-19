@@ -116,6 +116,11 @@ const makeThumbnail = (
     }, 0);
 });
 
+export const getVariantBasePath = (sound: ISound, variant: ISound['variants'][0]): string =>
+    `${global.projdir}/snd/s${sound.uid}_${variant.uid}`;
+export const getVariantPath = (sound: ISound, variant: ISound['variants'][0]): string =>
+    `${getVariantBasePath(sound, variant)}${path.extname(variant.source)}`;
+
 const addSoundFile = async function addSoundFile(sound: ISound, file: string): Promise<void> {
     try {
         const generateGUID = require('./../../generateGUID');
@@ -126,9 +131,8 @@ const addSoundFile = async function addSoundFile(sound: ISound, file: string): P
             source: file
         };
         sound.variants.push(variant);
-        const basePath: string = `${(global as any).projdir}/snd/s${sound.uid}_${variant.uid}` as string;
-        await fs.copy(file, `${basePath}${path.extname(file)}`);
-        await this.makeThumbnail(file, `${basePath}_prev.png`);// TODO more sizes
+        await fs.copy(file, getVariantPath(sound, variant));
+        await this.makeThumbnail(file, `${getVariantBasePath(sound, variant)}_prev.png`);// TODO more sizes
     } catch (e) {
         console.error(e);
         (window as Window).alertify.error(e);
@@ -136,11 +140,19 @@ const addSoundFile = async function addSoundFile(sound: ISound, file: string): P
     }
 };
 
-const loadSound = (path: string, name: string): ISound => {
-    const asset = sound.add(name, {
-        url: path
-    }) as unknown as ISound;// TODO fix the type
-    return asset;
+const pixiSoundPrefix = 'pixiSound-';
+
+const loadSound = (asset: ISound): void => {
+    for (const variant of asset.variants) {
+        const key = `${pixiSoundPrefix}${variant.uid}`;
+        if (sound.exists(key)) {
+            continue;
+        }
+        sound.add(key, {
+            url: getVariantPath(asset, variant),
+            preload: true
+        });
+    }
 };
 
 export {

@@ -1,5 +1,11 @@
+// TODO: make a custom class that will handle the randomized sounds
+// to allow making them looping while still giving the user the ability
+// to stop the sound at any time.
+
 /* eslint no-use-before-define: 0 */
 import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound, SoundLibrary} from 'node_modules/@pixi/sound';
+import type {webaudio} from 'node_modules/@pixi/sound/lib';
+import type {ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
 import * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
@@ -25,38 +31,53 @@ type fxConstructorOptions = {
     [T in fxName]: ConstructorParameters<typeof pixiSoundFilters[T]>
 }
 
-export const sounds: Record<string, Sound> = {};
-
-/**
- * Used for removing filter
- * @param {string} [name] The name of a sound to affect. If omitted, it affects all sounds.
- * @param {string} [filter] The name of the filter. If omitted, all filters are removed.
- * @returns An array of filter(s) (after the removal(s)) or null (if no filter remains).
- */
-const remainingFilter = (
-    name?: string | Sound,
-    filter?: fxName
-): Filter[] => {
-    // eslint-disable-next-line no-nested-ternary
-    const filters = name ? (typeof name === 'string' ? sounds[name as string].filters : name.filters) : PIXI.sound.filtersAll;
-    if (filters && filters.length > 0) {
-        if (!filter.includes('Filter')) {
-            filter += 'Filter';
-        }
-        const copy = [...filters];
-        if (filter) {
-            filters.forEach((f: FilterPreserved, i: number) => {
-                if (f.preserved === filter) {
-                    copy.splice(i, 1);
-                }
-            });
-            return copy;
-        }
-    }
-    return [];
-};
+export const sounds: Record<string, ExportedSound> = {};
 
 export const pixiSoundPrefix = 'pixiSound-';
+const randomRange = (min: number, max: number): number => Math.random() * (max - min) + min;
+
+/**
+ * Plays a variant of a sound by applying randomized filters (if applicable)
+ * as exported from ct.IDE.
+ *
+ * @param {string} name Sound's name
+ */
+const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebAudioInstance => {
+    if (sound instanceof Sound) {
+        return sound.play() as webaudio.WebAudioInstance;
+    }
+    const variant = sound.variants[Math.floor(Math.random() * sound.variants.length)];
+    const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`).play() as
+        webaudio.WebAudioInstance;
+    if (sound.volume?.enabled) {
+        (pixiSoundInst as IMediaInstance).volume =
+            randomRange(sound.volume.min, sound.volume.max) * (options?.volume || 1);
+    }
+    if (sound.pitch?.enabled) {
+        (pixiSoundInst as IMediaInstance).speed =
+            randomRange(sound.pitch.min, sound.pitch.max) * (options?.speed || 1);
+    }
+    if (sound.distortion?.enabled) {
+        soundsLib.addDistortion(
+            pixiSoundInst,
+            randomRange(sound.distortion.min, sound.distortion.max)
+        );
+    }
+    if (sound.reverb?.enabled) {
+        soundsLib.addReverb(
+            pixiSoundInst,
+            randomRange(sound.reverb.secondsMin, sound.reverb.secondsMax),
+            randomRange(sound.reverb.decayMin, sound.reverb.decayMax)
+        );
+    }
+    if (sound.eq?.enabled) {
+        soundsLib.addEqualizer(
+            pixiSoundInst,
+            ...sound.eq.bands.map(band => randomRange(band.min, band.max))
+        );
+    }
+    return pixiSoundInst;
+};
 
 export const soundsLib = {
     /**
@@ -93,11 +114,22 @@ export const soundsLib = {
      * @returns Either a sound instance, or a promise that resolves into a sound instance.
      */
     play(name: string, options?: PlayOptions): Promise<IMediaInstance> | IMediaInstance {
+        // TODO:
         if (!soundsLib.exists(name)) {
             throw new Error(`[sounds.play] Sound "${name}" was not found. Is it a typo?`);
         } else {
-            return sounds[name].play(options);
+            if (name in sounds) {
+                const exported = sounds[`${pixiSoundPrefix}${name}`];
+                return playVariant(exported, options);
+            }
+            return pixiSound[`${pixiSoundPrefix}${name}`].play(options);
         }
+    },
+    playDirectVariant(
+        exported: ExportedSound,
+        options?: PlayOptions
+    ): Promise<IMediaInstance> | IMediaInstance {
+        return playVariant(exported, options);
     },
 
     /**
@@ -159,7 +191,7 @@ export const soundsLib = {
      * @returns {boolean}
      */
     exists(name: string): boolean {
-        return (name in sounds);
+        return (name in sounds) || pixiSound.exists(`${pixiSoundPrefix}${name}`);
     },
 
     /**
@@ -172,7 +204,7 @@ export const soundsLib = {
      */
     playing(name?: string): boolean {
         if (soundsLib.exists(name)) {
-            const snd: Sound = sounds[name] as Sound;
+            const snd: Sound = pixiSound[name] as Sound;
             if (name) {
                 return snd.isPlaying;
             }
@@ -249,71 +281,122 @@ export const soundsLib = {
     },
 
     /**
-     * Add a filter to the specified sound. Existing filters are:
-     * DistortionFilter/EqualizerFilter/MonoFilter/ReverbFilter/StereoFilter/TelephoneFilter
+     * Adds a filter to the specified sound and remembers its constructor name.
+     * This method is not intended to be called directly.
      *
-     * @param name The name of a sound to affect.
-     * @param {fxName} filter The name of the filter.
-     * @param {fxConstructorOptions[T]} args Arguments depending of the filter.
+     * @param sound If set to false, applies the filter globally.
+     * If set to a string, applies the filter to the specified sound asset.
+     * If set to a media instance or PIXI.Sound instance, applies the filter to it.
      */
-    addFilter<T extends fxName>(
-        sound: string | Sound,
-        filter: T,
-        ...args: fxConstructorOptions[T]
+    addFilter(
+        sound: false | string | Sound | webaudio.WebAudioInstance,
+        filter: pixiSoundFilters.Filter
     ): void {
-        const fx = new PIXI.sound.filters[filter as 'FilterPreserved'](...args);
-        fx.preserved = filter;
-        const snd = typeof sound === 'string' ? sounds[sound] : sound;
-        if (!snd.filters || snd.filters.length === 0) {
-            snd.filters = [fx];
+        const fx = filter as FilterPreserved;
+        fx.preserved = fx.toString().slice(8, -1);
+        console.log(fx.preserved);
+        if (sound === false) {
+            PIXI.sound.filtersAll = [...(PIXI.sound.filtersAll || []), fx];
+        } else if (typeof sound === 'string') {
+            const exported = sounds[sound];
+            for (const variant of exported.variants) {
+                const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`);
+                pixiSoundInst.filters = [...(pixiSoundInst.filters || []), fx];
+            }
+        } else if (sound) {
+            sound.filters = [...(sound.filters || []), fx];
         } else {
-            const copy = snd.filters;
-            snd.filters = [...copy, fx];
+            throw new Error(`[sounds.addFilter] Invalid sound: ${sound}`);
         }
     },
-
-    /**
-     * Add a filter to all sounds. Existing filters are:
-     * DistortionFilter/EqualizerFilter/MonoFilter/ReverbFilter/StereoFilter/TelephoneFilter
-     *
-     * @param {fxName} filter The name of the filter.
-     * @param {fxConstructorOptions[T]} args Arguments depending of the filter.
-     *
-     * @returns {void}
-     */
-    addFilterToAll<T extends fxName>(
-        filter: T,
-        ...args: fxConstructorOptions[T]
-    ): void {
-        const fx = new PIXI.sound.filters[filter as 'FilterPreserved'](...args);
-        fx.preserved = filter;
-        const copy = PIXI.sound.filtersAll;
-        PIXI.sound.filtersAll = !PIXI.sound.filtersAll ? [fx] : [...copy, fx];
+    addDistortion(
+        sound: false | string | Sound | webaudio.WebAudioInstance,
+        ...args: fxConstructorOptions['DistortionFilter']
+    ): pixiSoundFilters.DistortionFilter {
+        const fx = new PIXI.sound.filters.DistortionFilter(...args);
+        soundsLib.addFilter(sound, fx);
+        return fx;
+    },
+    addEqualizer(
+        sound: false | string | Sound | webaudio.WebAudioInstance,
+        ...args: fxConstructorOptions['EqualizerFilter']
+    ): pixiSoundFilters.EqualizerFilter {
+        const fx = new PIXI.sound.filters.EqualizerFilter(...args);
+        soundsLib.addFilter(sound, fx);
+        return fx;
+    },
+    addMonoFilter(
+        sound: false | string | Sound | webaudio.WebAudioInstance,
+        ...args: fxConstructorOptions['MonoFilter']
+    ): pixiSoundFilters.MonoFilter {
+        const fx = new PIXI.sound.filters.MonoFilter(...args);
+        soundsLib.addFilter(sound, fx);
+        return fx;
+    },
+    addReverb(
+        sound: false | string | Sound | webaudio.WebAudioInstance,
+        ...args: fxConstructorOptions['ReverbFilter']
+    ): pixiSoundFilters.ReverbFilter {
+        const fx = new PIXI.sound.filters.ReverbFilter(...args);
+        soundsLib.addFilter(sound, fx);
+        return fx;
+    },
+    addStereoFilter(
+        sound: false | string | Sound | webaudio.WebAudioInstance,
+        ...args: fxConstructorOptions['StereoFilter']
+    ): pixiSoundFilters.StereoFilter {
+        const fx = new PIXI.sound.filters.StereoFilter(...args);
+        soundsLib.addFilter(sound, fx);
+        return fx;
+    },
+    addTelephone(
+        sound: false | string | Sound | webaudio.WebAudioInstance,
+        ...args: fxConstructorOptions['TelephoneFilter']
+    ): pixiSoundFilters.TelephoneFilter {
+        const fx = new PIXI.sound.filters.TelephoneFilter(...args);
+        soundsLib.addFilter(sound, fx);
+        return fx;
     },
 
     /**
      * Remove a filter to the specified sound.
      *
-     * @param {string} name The name of a sound to affect.
-     * @param {string} [filter] The name of the filter. If omitted, all filters are removed.
+     * @param {string} [name] The sound to affect. Can be a name of the sound asset
+     * or the specific sound instance you get from running `sounds.play`.
+     * If set to false, it affects all sounds.
+     * @param {string} [filter] The name of the filter. If omitted, all the filters are removed.
      *
      * @returns {void}
      */
-    removeFilter(name: string | Sound, filter?: fxName): void {
-        const filters: Filter[] = remainingFilter(name, filter);
-        const snd = typeof name === 'string' ? sounds[name as string] : name;
-        snd.filters = filters;
-    },
-
-    /**
-     * Remove a filter added with addFilterToAll().
-     *
-     * @param {string} [filter] The name of the filter. If omitted, all filters are removed.
-     *
-     * @returns {void}
-     */
-    removeFilterFromAll(filter?: fxName): void {
-        PIXI.sound.filtersAll = filter ? remainingFilter(null, filter) : [];
+    removeFilter(name: false | string | Sound | webaudio.WebAudioInstance, filter?: fxName): void {
+        let filters;
+        if (name === false) {
+            filters = PIXI.sound.filtersAll;
+        } else if (name && typeof name !== 'string') {
+            ({filters} = name);
+        }
+        if (!filters && name) {
+            // clear all variants' filters
+            const exported = sounds[name as string];
+            for (const variant of exported.variants) {
+                const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`);
+                soundsLib.removeFilter(pixiSoundInst, filter);
+            }
+            return;
+        }
+        if (filters && filters.length > 0) {
+            if (!filter.includes('Filter')) {
+                filter += 'Filter';
+            }
+            const copy = [...filters];
+            if (filter) {
+                filters.forEach((f: FilterPreserved, i: number) => {
+                    if (f.preserved === filter) {
+                        copy.splice(i, 1);
+                    }
+                });
+            }
+        }
     },
 
     /**
@@ -325,15 +408,26 @@ export const soundsLib = {
      *
      * @returns {number} The current speed of the sound.
      */
-    speed(name: string | IMediaInstance, value?: number): number {
-        const pixiName = `${pixiSoundPrefix}${name}`;
+    speed(name: string | IMediaInstance, value?: number): number { // TODO: make an overload
         if (value) {
             if (typeof name === 'string') {
+                if (name in sounds) {
+                    for (const variant of sounds[name].variants) {
+                        PIXI.sound.speed(`${pixiSoundPrefix}${variant.uid}`, value);
+                        return value;
+                    }
+                }
+                const pixiName = `${pixiSoundPrefix}${name}`;
                 PIXI.sound.speed(pixiName, value);
             } else {
                 (name as IMediaInstance).speed = value;
+                return value;
             }
         }
+        if ((name as string) in sounds) {
+            return PIXI.sound.speed(sounds[name as string].variants[0].uid);
+        }
+        const pixiName = `${pixiSoundPrefix}${name}`;
         return typeof name === 'string' ? PIXI.sound.speed(pixiName) : (name as IMediaInstance).speed;
     },
 
@@ -346,19 +440,6 @@ export const soundsLib = {
         PIXI.sound.speedAll = value;
     },
 
-    /**
-     * Plays a variant of a sound by applying a small randomized speed value.
-     *
-     * @param {string} name Sound's name
-     * @param {number} [deviation] A higher number means a bigger variant (depends also on sound).
-     * @returns {void}
-     */
-    playVariant(name: string, deviation = 0.1): void {
-        const ran = Math.random() * deviation * (Math.random() < 0.5 ? -1 : 1);
-        soundsLib.play(name, {
-            speed: 1 + ran
-        });
-    },
 
     /**
     * Toggle muted property for all sounds.

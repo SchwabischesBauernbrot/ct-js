@@ -1,6 +1,6 @@
 import {required} from './u';
 import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
-import {pixiSoundPrefix, sounds} from './sounds.js';
+import {pixiSoundPrefix, sounds as soundLib} from './sounds.js';
 import type {TextureShape, ExportedTiledTexture, ExportedSkeleton, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
 import * as pixiMod from 'node_modules/pixi.js';
@@ -36,6 +36,11 @@ const loadingScreen = document.querySelector('.ct-aLoadingScreen') as HTMLDivEle
 
 export const textures: Record<string, CtjsAnimation> = {};
 export const skeletons: Record<string, any> = {};
+const exportedSounds = [/*!@sounds@*/][0] as ExportedSound[];
+export const sounds: Record<string, ExportedSound> = {};
+for (const sound of exportedSounds) {
+    sounds[sound.name] = sound;
+}
 
 /**
  * An object that manages and stores textures and other assets,
@@ -43,6 +48,7 @@ export const skeletons: Record<string, any> = {};
  */
 const resLib = {
     sounds,
+    pixiSounds: {} as Record<string, Sound>,
     textures,
     skeletons,
     groups: [/*!@resourceGroups@*/][0] as Record<string, string[]>,
@@ -195,7 +201,7 @@ const resLib = {
                         if (err) {
                             reject(err);
                         } else {
-                            resLib.sounds[name] = asset;
+                            resLib.pixiSounds[name] = asset;
                             resolve(name);
                         }
                     } :
@@ -218,7 +224,6 @@ const resLib = {
         /* eslint-disable prefer-destructuring */
         const atlases: string[] = [/*!@atlases@*/][0];
         const tiledImages: ExportedTiledTexture[] = [/*!@tiledImages@*/][0];
-        const exportedSounds: ExportedSound[] = [/*!@sounds@*/][0];
         const bitmapFonts: string[] = [/*!@bitmapFonts@*/][0];
         const skeletons: ExportedSkeleton[] = [/*!@skeletons@*/][0];
         /* eslint-enable prefer-destructuring */
@@ -252,7 +257,9 @@ const resLib = {
             loadingPromises.push(resLib.loadSkeleton(skel.dataPath, skel.name));
         }
         for (const sound of exportedSounds) {
-            loadingPromises.push(resLib.loadSound(sound.path, sound.name));
+            for (const variant of sound.variants) {
+                loadingPromises.push(resLib.loadSound(variant.source, variant.uid));
+            }
         }
 
         /*!@res@*/

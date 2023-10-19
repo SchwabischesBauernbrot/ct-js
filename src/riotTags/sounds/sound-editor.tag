@@ -2,13 +2,13 @@
     @attribute asset
 sound-editor.aView.pad.flexfix(onclick="{tryClose}")
     .flexfix-body.sound-editor-aWrapper
-        //- .flexrow
-            //- .aCard-aThumbnail
-            //-     img(src="{currentWaveformPath}")
-            //-     .aSpacer.nogrow
-            //-     button.round.square.nogrow(onclick="{togglePlay}")
-            //-         svg.feather
-            //-             use(xlink:href="#{playing ? 'pause' : 'play'}")
+        .flexrow
+            .aCard-aThumbnail
+                img(src="{currentWaveformPath}")
+                .aSpacer.nogrow
+                button.round.square.nogrow(onclick="{test}")
+                    svg.feather
+                        use(xlink:href="#{playing ? 'pause' : 'play'}")
         .flexrow.sound-editor-Columns
             .fifty.npl.flexfix
                 .flexfix-header
@@ -41,7 +41,11 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 virtual(each="{prop in ['volume', 'pitch', 'distortion']}")
                     .flexrow.sound-editor-aFilter
                         label.checkbox
-                            input(type="checkbox" checked="{asset[prop].enabled}" onchange="{toggleCheckbox(prop)}")
+                            input(
+                                type="checkbox"
+                                checked="{asset[prop].enabled}"
+                                onchange="{toggleCheckbox(prop)}"
+                            )
                             b {voc[prop]}
                         range-selector(
                             hide-label="hide-label" hide-legend="hide-legend"
@@ -116,7 +120,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 svg.feather
                     use(xlink:href="#check")
                 span {vocGlob.apply}
-    
+
     script.
         const path = require('path');
         const soundResMethods = require('./data/node_requires/resources/sounds');
@@ -126,13 +130,14 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         this.mixin(window.riotWired);
         this.currentSoundPlaying = null;
         this.asset = this.opts.asset;
+        soundResMethods.loadSound(this.asset);
 
-        console.log("11h_25")
+        console.log("11h_filter") // TODO: remove
 
         this.currentWaveformPath = [];
 
         this.on('update', () => {
-            const sound = global.currentProject.sounds.find(sound => 
+            const sound = global.currentProject.sounds.find(sound =>
                 this.asset.name === sound.name && this.asset !== sound);
             if (sound) {
                 this.nameTaken = true;
@@ -150,6 +155,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
 
         this.reimportVariant = variant => e => {
             // TODO
+            // remove the old variant from pixi.sound first
         };
 
         this.deleteVariant = variant => e => {
@@ -160,26 +166,30 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         };
 
         this.defineSoundName = variantUid => {
-            return `${pixiSoundPrefix}${this.asset.name}_${variantUid}`;
+            return `${pixiSoundPrefix}${variantUid}`;
         }
 
         this.stop = () => {
             if(this.currentSoundPlaying) {
                 soundsLib.stop(this.currentSoundPlaying);
-                this.currentSoundPlaying = null;                
+                this.currentSoundPlaying = null;
             }
+        }
+
+        this.test = () => {
+            soundsLib.playDirectVariant(this.asset);
         }
 
         this.play = variantUid => {
             this.stop();
             const soundName = this.defineSoundName(variantUid);
             this.currentSoundPlaying = soundName.replace(pixiSoundPrefix, "");
-            soundsLib.play(soundName);
+            soundsLib.playDirectVariant(this.asset);
         }
 
         this.playing = variantUid => {
             if(this.currentSoundPlaying !== null) {
-                return soundsLib.playing(this.defineSoundName(variantUid));        
+                return soundsLib.playing(this.defineSoundName(variantUid));
             }
             return false;
         }
@@ -187,13 +197,10 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         this.togglePlay = variant => e => {
             // TODO/WIP: use callback to know when the sound finished "itself" from playing 
             const soundName = this.defineSoundName(variant.uid);
-            if(!soundsLib.exists(soundName)) {
-                allSounds[soundName] = soundResMethods.loadSound(variant.source, soundName);
-            }
             if(this.currentSoundPlaying === soundName.replace(pixiSoundPrefix, "")) {
                 this.stop();
             } else {
-                this.play(variant.uid);    
+                this.play(variant.uid);
             }
         }
 
@@ -207,17 +214,17 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             const variantUid = this.asset.variants[this.asset.variants.length - 1].uid;
             this.currentWaveformPath[variantUid] = sounds.getThumbnail(this.asset.uid, variantUid);
             this.update();
+            soundResMethods.loadSound(this.asset);
         }
 
         this.toggleCheckbox = prop => e => {
-            if(prop === 'reverse') {
-                this.asset.reverb[prop] = !this.asset.reverb[prop];    
+            // TODO: volume and pitch
+            console.log(prop);
+            this.asset[prop].enabled = !this.asset[prop].enabled;
+            if (this.currentSoundPlaying) {
+                this.stop();
             }
-            else {
-                this.asset[prop].enabled = !this.asset[prop].enabled;
-            }
-        }
-
+        };
         this.setProp = (prop, arg = null) => e => {
             const { minRangeValue: min, maxRangeValue: max } = e.detail;
             if(arg !== null) {
@@ -232,7 +239,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 }
             } else {
                 this.asset[prop].min = min;
-                this.asset[prop].max = max;                
+                this.asset[prop].max = max;
             }
         };
 

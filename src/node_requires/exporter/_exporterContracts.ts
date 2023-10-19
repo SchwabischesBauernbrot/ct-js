@@ -1,6 +1,7 @@
 /// <reference path="../resources/textures/ITexture.d.ts" />
 /// <reference path="../resources/emitterTandems/types.d.ts" />
 /// <reference path="../resources/rooms/IRoom.d.ts" />
+/// <reference path="../resources/sounds/types.d.ts" />
 /// <reference path="../resources/projects/IProject.d.ts" />
 
 import * as PIXI from 'node_modules/pixi.js';
@@ -152,9 +153,4 @@ export type ExportedStyle = {
     dropShadowDistance?: number;
 }
 
-export type ExportedSound = {
-    /** The name of the sound and how it is used in the code */
-    name: string;
-    /** The path to the sound file.*/
-    path: string;
-};
+export type ExportedSound = Omit<ISound, 'uid' | 'group' | 'lastmod' | 'type'>;
