@@ -22,6 +22,7 @@ type eqBands = [
 ];
 
 interface ISound extends IAsset {
+    type: 'sound';
     name: string,
     preload: boolean,
     variants: soundVariant[],

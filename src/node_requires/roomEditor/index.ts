@@ -1,4 +1,5 @@
 import {History} from './history';
+import {RoomEditorPreview} from './previewer';
 
 import {Copy} from './entityClasses/Copy';
 import {Tile} from './entityClasses/Tile';
@@ -13,9 +14,9 @@ import {ViewportRestriction} from './entityClasses/ViewportRestriction';
 
 import {IRoomEditorRiotTag} from './IRoomEditorRiotTag';
 import {IRoomEditorInteraction, PixiListener, pixiListeners, interactions, customListeners, CustomListener} from './interactions';
+import {getById} from '../resources';
 import {getPixiSwatch} from './../themes';
 import {defaultTextStyle, recolorFilters, eraseCursor, toPrecision, snapToDiagonalGrid, snapToRectangularGrid} from './common';
-import {getTemplateFromId} from '../resources/templates';
 import {ease, Easing} from 'node_modules/pixi-ease';
 
 import * as PIXI from 'node_modules/pixi.js';
@@ -137,9 +138,9 @@ class RoomEditor extends PIXI.Application {
             roundPixels: pixelart
         }));
         this.ticker.maxFPS = 60;
-        this.observable = riot.observable({});
+        this.observable = riot.observable();
 
-        const {room} = editor.opts;
+        const room = editor.asset;
         this.ctRoom = room;
         this.riotEditor = editor;
 
@@ -161,7 +162,7 @@ class RoomEditor extends PIXI.Application {
         this.marqueeBox.visible = false;
         this.overlays.addChild(this.marqueeBox);
         this.overlays.addChild(this.snapTarget);
-        this.deserialize(editor.opts.room);
+        this.deserialize(editor.room);
         this.stage.addChild(this.transformer);
 
         this.pointerCoords.zIndex = Infinity;
@@ -196,7 +197,7 @@ class RoomEditor extends PIXI.Application {
             }
         });
 
-        this.stage.interactive = true;
+        this.stage.eventMode = 'static';
         this.interactions = interactions;
         for (const event of pixiListeners) {
             this.stage.on(event, (e: PIXI.FederatedEvent) => {
@@ -493,7 +494,7 @@ class RoomEditor extends PIXI.Application {
                 const [, template] = copied;
                 // Skip copies that no longer exist in the project
                 try {
-                    getTemplateFromId(template.uid);
+                    getById('template', template.uid);
                     created = new Copy(template, this, false);
                     this.room.addChild(created);
                     createdSet.add([created]);
@@ -766,26 +767,37 @@ class RoomEditor extends PIXI.Application {
      * as it repositions the room.
      */
     getSplashScreen(big: boolean): HTMLCanvasElement {
+        return RoomEditor.getRoomPreview(this.ctRoom, big);
+    }
+    static getRoomPreview(room: IRoom, big: boolean): HTMLCanvasElement {
         const w = big ? 340 : 64,
               h = big ? 256 : 64;
         const renderTexture = PIXI.RenderTexture.create({
             width: w,
             height: h
         });
-        this.overlays.visible = false;
-        this.transformer.visible = false;
-        this.pointerCoords.visible = false;
-        this.clicktrap.width = w;
-        this.clicktrap.height = h;
-        this.clicktrap.alpha = 1;
-        this.clicktrap.tint = (this.renderer as PIXI.Renderer).background.color;
-        this.room.scale.set(Math.min(w / this.ctRoom.width, h / this.ctRoom.height));
-        this.room.x = (w - this.ctRoom.width * this.room.scale.x) / 2;
-        this.room.y = (h - this.ctRoom.height * this.room.scale.y) / 2;
-        this.renderer.render(this.stage, {
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const pixelart = Boolean(currentProject.settings.rendering.pixelatedrender);
+        const scale = Math.min(w / room.width, h / room.height);
+        const preview = new RoomEditorPreview({
+            view: canvas
+        }, room, pixelart, {
+            x: (w - room.width * scale) / 2,
+            y: (h - room.height * scale) / 2,
+            scale
+        });
+        preview.renderer.render(preview.stage, {
             renderTexture
         });
-        return (this.renderer as PIXI.Renderer).extract.canvas(renderTexture) as HTMLCanvasElement;
+        const out = preview.renderer.extract.canvas(renderTexture) as HTMLCanvasElement;
+        preview.destroy(false, {
+            children: true,
+            texture: false,
+            baseTexture: false
+        });
+        return out;
     }
 }
 
