@@ -28,6 +28,7 @@ create-asset-menu.relative.inlineblock(class="{opts.class}")
         this.mixin(require('./data/node_requires/riotMixins/voc').default);
 
         const priorityTypes = ['texture', 'template', 'room'];
+        const customizedTypes = ['behavior'];
 
         const {assetTypes, resourceToIconMap, createAsset} = require('./data/node_requires/resources');
 
@@ -66,7 +67,36 @@ create-asset-menu.relative.inlineblock(class="{opts.class}")
         menuItems.push({
             type: 'separator'
         });
-        assetTypes.filter(assetType => !priorityTypes.includes(assetType)).forEach(assetTypeIterator);
+        assetTypes
+            .filter(assetType => !priorityTypes.includes(assetType) &&
+                !customizedTypes.includes(assetType))
+            .forEach(assetTypeIterator);
+
+        // Behaviors need a subtype preset
+        menuItems.push({
+            label: this.voc.behaviorTemplate,
+            icon: 'behavior',
+            click: async () => {
+                const asset = await createAsset('behavior', this.opts.folder || null, {
+                    behaviorType: 'template'
+                });
+                if (this.opts.onimported) {
+                    this.opts.onimported(asset);
+                }
+            }
+        });
+        menuItems.push({
+            label: this.voc.behaviorRoom,
+            icon: 'behavior',
+            click: async () => {
+                const asset = await createAsset('behavior', this.opts.folder || null, {
+                    behaviorType: 'room'
+                });
+                if (this.opts.onimported) {
+                    this.opts.onimported(asset);
+                }
+            }
+        });
         menuItems.push({
             type: 'separator'
         });
@@ -77,7 +107,8 @@ create-asset-menu.relative.inlineblock(class="{opts.class}")
                 this.tool = 'textureGenerator';
                 this.update();
             }
-        })
+        });
+
         this.menu = {
             opened: false,
             items: menuItems

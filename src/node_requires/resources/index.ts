@@ -8,6 +8,7 @@ import * as rooms from './rooms';
 import * as templates from './templates';
 import * as styles from './styles';
 import * as skeletons from './skeletons';
+import * as behaviors from './behaviors';
 
 import getUid from '../generateGUID';
 import {getLanguageJSON, getByPath} from '../i18n';
@@ -63,7 +64,8 @@ const typeToApiMap: Record<resourceType, IResourceAPI> = {
     style: styles,
     tandem: emitterTandems,
     template: templates,
-    texture: textures
+    texture: textures,
+    behavior: behaviors
 };
 /** Names of all possible asset types */
 export const assetTypes = Object.keys(typeToApiMap) as resourceType[];
@@ -77,7 +79,8 @@ type typeToTsTypeMap = {
         T extends 'skeleton' ? ISkeleton :
         T extends 'texture' ? ITexture :
         T extends 'tandem' ? ITandem :
-        T extends 'template'? ITemplate :
+        T extends 'template' ? ITemplate :
+        T extends 'behavior' ? IBehavior :
         never;
 }
 
@@ -332,6 +335,16 @@ export const deleteAsset = async (asset: IAsset): Promise<void> => {
             }
         }
     }
+    // Do the same for potential behaviors' keys
+    for (const other of [...getOfType('room'), ...getOfType('template')]) {
+        for (const key in other.extends) {
+            if (Array.isArray(other.extends[key])) {
+                (other.extends[key] as []).filter(val => val !== asset.uid);
+            } else if (other.extends[key] === asset.uid) {
+                other.extends[key] = -1;
+            }
+        }
+    }
     // Remove from the parent folder
     const collection = collectionMap.get(asset);
     collection.splice(collection.indexOf(asset), 1);
@@ -441,7 +454,8 @@ export const resourceToIconMap: Record<resourceType, string> = {
     room: 'room',
     template: 'template',
     style: 'ui',
-    skeleton: 'skeletal-animation'
+    skeleton: 'skeletal-animation',
+    behavior: 'behavior'
 };
 export const editorMap: Record<resourceType, string> = {
     font: 'font-editor',
@@ -451,7 +465,8 @@ export const editorMap: Record<resourceType, string> = {
     style: 'style-editor',
     tandem: 'emitter-tandem-editor',
     template: 'template-editor',
-    texture: 'texture-editor'
+    texture: 'texture-editor',
+    behavior: 'behavior-editor'
 };
 
 export {

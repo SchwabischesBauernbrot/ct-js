@@ -29,6 +29,9 @@
         A two-fold callback (item => e => {…}) fired when a user clicks on an item,
         passing the associated collection object as its only argument in the first function,
         and a MouseEvent in a second function
+    @attribute [customfilter] ((asset: IAsset) => boolean)
+        A custom filter function applied to hide separate assets if the function
+        returns `false`.
 
     @method updateList()
         Update the asset viewer, needed when new items were added.
@@ -336,6 +339,10 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                     .filter(a => this.assetTypes.includes(a.type) || a.type === 'folder');
             } else {
                 this.entries = [...this.currentCollection];
+            }
+            if (this.opts.customfilter) {
+                this.entries = this.entries
+                    .filter(entry => entry.type === 'folder' || this.opts.customfilter(entry));
             }
             if (this.sort === 'name') {
                 if (this.opts.names) {

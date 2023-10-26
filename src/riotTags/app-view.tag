@@ -106,7 +106,7 @@ app-view.flexcol
                 window.hotkeys.push(tab);
             } else {
                 // The current tab is an asset
-                if (tab.type === 'room' || tab.type === 'template') {
+                if (['room', 'template', 'behavior'].includes(tab.type)) {
                     window.orders.trigger('forceCodeEditorLayout');
                 }
                 window.hotkeys.push(tab.uid);

@@ -7,6 +7,7 @@ interface IScriptableEvent {
     eventKey: string;
 }
 
+/** Describes an asset that supports scripting through ct.js events */
 interface IScriptable extends IAsset {
     name: string;
     events: IScriptableEvent[];
