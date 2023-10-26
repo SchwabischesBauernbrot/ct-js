@@ -1,4 +1,3 @@
-const glob = require('./../glob');
 const {getUnwrappedExtends} = require('./utils');
 import {getBaseScripts} from './scriptableProcessor';
 import {embedStaticBehaviors, getBehaviorsList} from './behaviors';
@@ -51,7 +50,7 @@ const stringifyRooms = (
     let rootRoomOnDraw = '';
     let rootRoomOnLeave = '';
 
-    const rooms = assets.room.map(embedStaticBehaviors);
+    const rooms = assets.room.map(r => embedStaticBehaviors(r, proj));
 
     for (const r of rooms) {
         const objs: ExportedCopy[] = [];

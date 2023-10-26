@@ -43,7 +43,7 @@ const stringifyTemplates = function (
             height: tex.height,
             width: tex.width
         }));
-    const templatesEmbedded = assets.template.map(embedStaticBehaviors);
+    const templatesEmbedded = assets.template.map(t => embedStaticBehaviors(t, proj));
     for (const template of templatesEmbedded) {
         const scripts = getBaseScripts(template, proj);
         const textureInfo = getTextureInfo(blankTextures, template);
