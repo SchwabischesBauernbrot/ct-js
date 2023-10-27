@@ -73,28 +73,51 @@ create-asset-menu.relative.inlineblock(class="{opts.class}")
             .forEach(assetTypeIterator);
 
         // Behaviors need a subtype preset
+        const bhVoc = this.vocGlob.assetTypes.behavior;
         menuItems.push({
-            label: this.voc.behaviorTemplate,
+            label: bhVoc[1].slice(0, 1).toUpperCase() + bhVoc[1].slice(1),
             icon: 'behavior',
-            click: async () => {
-                const asset = await createAsset('behavior', this.opts.folder || null, {
-                    behaviorType: 'template'
-                });
-                if (this.opts.onimported) {
-                    this.opts.onimported(asset);
-                }
-            }
-        });
-        menuItems.push({
-            label: this.voc.behaviorRoom,
-            icon: 'behavior',
-            click: async () => {
-                const asset = await createAsset('behavior', this.opts.folder || null, {
-                    behaviorType: 'room'
-                });
-                if (this.opts.onimported) {
-                    this.opts.onimported(asset);
-                }
+            submenu: {
+                items: [{
+                    label: this.voc.behaviorTemplate,
+                    icon: 'behavior',
+                    click: async () => {
+                        const asset = await createAsset('behavior', this.opts.folder || null, {
+                            behaviorType: 'template'
+                        });
+                        if (this.opts.onimported) {
+                            this.opts.onimported(asset);
+                        }
+                    }
+                }, {
+                    label: this.voc.behaviorRoom,
+                    icon: 'behavior',
+                    click: async () => {
+                        const asset = await createAsset('behavior', this.opts.folder || null, {
+                            behaviorType: 'room'
+                        });
+                        if (this.opts.onimported) {
+                            this.opts.onimported(asset);
+                        }
+                    }
+                }, {
+                    label: this.voc.behaviorImport,
+                    icon: 'download',
+                    click: async () => {
+                        const src = await window.showOpenDialog({
+                            filter: '.ctBehavior'
+                        });
+                        if (!src) {
+                            return;
+                        }
+                        const asset = await createAsset('behavior', this.opts.folder || null, {
+                            src
+                        });
+                        if (this.opts.onimported) {
+                            this.opts.onimported(asset);
+                        }
+                    }
+                }]
             }
         });
         menuItems.push({
