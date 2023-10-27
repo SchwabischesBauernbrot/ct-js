@@ -8,8 +8,9 @@ const behaviorsLib = {
     rooms: [/*!@behaviorsRooms@*/][0] as Record<string, ExportedBehavior>,
     /**
      * Adds a behavior to the given room or template.
-     * Only dynamic behaviors can be added. (Static behaviors are marked with a warning sign in UI.)
-      * @param target The room or template to which the behavior should be added.
+     * Only dynamic behaviors can be added.
+     * (Static behaviors are marked with a frozen (❄️) sign in UI.)
+     * @param target The room or template to which the behavior should be added.
      * @param behavior The name of the behavior to be added, as it was named in ct.IDE.
      */
     add(target: Room | Copy, behavior: string): void {
@@ -28,8 +29,8 @@ const behaviorsLib = {
     /**
      * Removes a behavior from the given room or template.
      * Only dynamic behaviors can be removed.
-     * (Static behaviors are marked with a warning sign in UI.)
-      * @param target The room or template from which the behavior should be removed.
+     * (Static behaviors are marked with a frozen (❄️) sign in UI.)
+     * @param target The room or template from which the behavior should be removed.
      * @param behavior The name of the behavior to be removed, as it was named in ct.IDE.
      */
     remove(target: Room | Copy, behavior: string): void {
