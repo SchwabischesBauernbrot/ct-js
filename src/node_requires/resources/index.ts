@@ -48,10 +48,22 @@ export interface IAssetContextItem {
 interface IResourceAPI {
     areThumbnailsIcons: boolean;
     getThumbnail: (asset: assetRef | IAsset, x2?: boolean, fs?: boolean) => string;
+    /**
+     * An optional method that returns a list of icons used to graphically characterize
+     * an asset in an asset browser.
+     */
+    getIcons?: (asset: IAsset) => string[];
+    /**
+     * An optional method for retrieving the name of an asset.
+     * If not set, the asset's `name` property is used.
+     */
     getName?: (asset: string | IAsset) => string;
     createAsset: (payload?: unknown) =>
         Promise<IAsset> | IAsset;
-    /** Optional as there can be no cleanup needed for specific asset types */
+    /**
+     * Optional as there can be no cleanup needed for specific asset types.
+     * These methods should never be called directly from UI.
+     */
     removeAsset?: (asset: assetRef | IAsset) => Promise<void> | void;
     reimportAsset?: (asset: assetRef | IAsset) => Promise<void>;
     assetContextMenuItems?: IAssetContextItem[];
@@ -414,6 +426,8 @@ export const getThumbnail = (asset: IAsset | IAssetFolder, x2?: boolean, fs?: bo
     }
     return typeToApiMap[asset.type].getThumbnail(asset, x2, fs);
 };
+export const getIcons = (asset: IAsset): string[] =>
+    typeToApiMap[asset.type].getIcons?.(asset) ?? [];
 export const getName = (asset: IAsset | IAssetFolder): string => {
     if (asset.type === 'folder') {
         return asset.name;

@@ -13,6 +13,7 @@ behavior-editor.aPanel.aView.flexrow
                     entitytype="{asset.behaviorType}"
                     onchanged="{changeCodeTab}"
                     currentevent="{currentSheet}"
+                    warnbehaviors="yes"
                 ).tall
             .flexfix-footer
                 .aSpacer

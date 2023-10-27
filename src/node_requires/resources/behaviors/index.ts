@@ -1,5 +1,6 @@
 import {get as getDefaultBehavior} from './defaultBehavior';
 import {getByTypes} from '..';
+import {canBeDynamicBehavior, getEventByLib} from '../../events';
 
 export const getThumbnail = (): string => 'behavior';
 export const areThumbnailsIcons = true;
@@ -23,4 +24,12 @@ export const removeAsset = (asset: IBehavior): void => {
     for (const template of templates) {
         template.behaviors = template.behaviors.filter(b => b !== asset.uid);
     }
+};
+
+import {getIcons as getScriptableIcons} from '../scriptables';
+export const getIcons = (asset: IBehavior): string[] => {
+    if (!asset.events.every(e => canBeDynamicBehavior(getEventByLib(e.eventKey, e.lib)))) {
+        return ['snowflake', ...getScriptableIcons(asset)];
+    }
+    return getScriptableIcons(asset);
 };

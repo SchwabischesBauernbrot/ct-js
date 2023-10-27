@@ -170,8 +170,8 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                             svg.feather
                                 use(xlink:href="#{iconMap[asset.type]}")
                             span(if="{!parent.opts.compact}")   {vocGlob.assetTypes[asset.type][0].slice(0, 1).toUpperCase()}{vocGlob.assetTypes[asset.type][0].slice(1)}
-                        .asset-browser-Icons(if="{parent.opts.icons}") // TODO: add support to resources API
-                            svg.feather(each="{icon in parent.opts.icons(asset)}" class="feather-{icon}")
+                        .asset-browser-Icons(if="{asset.type !== 'folder'}")
+                            svg.feather(each="{icon in parent.getIcons(asset)}" class="feather-{icon}")
                                 use(xlink:href="#{icon}")
                         span.date(if="{asset.lastmod && !parent.opts.compact}") {niceTime(asset.lastmod)}
     folder-editor(
@@ -196,6 +196,7 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
         this.usesIcons = resources.areThumbnailsIcons;
         this.iconMap = resources.resourceToIconMap;
         this.getName = resources.getName;
+        this.getIcons = resources.getIcons;
 
         /**
          * A list of opened folders, from the project's root (as its asset collection)
