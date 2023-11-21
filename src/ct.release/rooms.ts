@@ -1,17 +1,18 @@
 import uLib from './u';
 import backgrounds, {Background} from './backgrounds';
-import templatesLib, {Copy} from './templates';
+import templatesLib, {BasicCopy} from './templates';
 import tilemapsLib, {Tilemap} from './tilemaps';
 import mainCamera from './camera';
-import {deadPool, pixiApp, stack} from '.';
+import {copyTypeSymbol, deadPool, pixiApp, stack} from '.';
 import {ExportedRoom} from './../node_requires/exporter/_exporterContracts';
-import { updateViewport } from 'fittoscreen';
+import {updateViewport} from 'fittoscreen';
+import {runBehaviors} from './behaviors';
 
-import * as pixiMod from 'node_modules/pixi.js';
+import type * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod;
 
 type RoomMergeResult = {
-    copies: Copy[];
+    copies: BasicCopy[];
     tileLayers: Tilemap[];
     backgrounds: Background[];
 };
@@ -32,15 +33,27 @@ export class Room extends PIXI.Container<pixiMod.DisplayObject> {
      * for more info on UI layers.
      */
     isUi: boolean;
+    alignElements: BasicCopy[] = [];
     kill = false;
     tileLayers: Tilemap[] = [];
     backgrounds: Background[] = [];
+    /** Time for the next run of the 1st timer, in seconds. */
     timer1 = 0;
+    /** Time for the next run of the 2nd timer, in seconds. */
     timer2 = 0;
+    /** Time for the next run of the 3rd timer, in seconds. */
     timer3 = 0;
+    /** Time for the next run of the 4th timer, in seconds. */
     timer4 = 0;
+    /** Time for the next run of the 5th timer, in seconds. */
     timer5 = 0;
+    /** Time for the next run of the 6th timer, in seconds. */
     timer6 = 0;
+    /**
+     * The list of currently active behaviors. For editing this list,
+     * use `behaviors.add` and `behaviors.remove`
+     */
+    readonly behaviors: string[];
     viewWidth: number;
     viewHeight: number;
     /** The name of this room. */
@@ -73,7 +86,80 @@ export class Room extends PIXI.Container<pixiMod.DisplayObject> {
      * without knowing exactly what you're doing.
      */
     onLeave: () => void;
-    constructor(template: ExportedRoom) {
+
+    realignElements(
+        oldWidth: number,
+        oldHeight: number,
+        newWidth: number,
+        newHeight: number
+    ): void {
+        for (const copy of this.alignElements) {
+            if (!copy.align) {
+                continue;
+            }
+            // get the old reference frame
+            const {padding, frame} = copy.align;
+            const xref = oldWidth * frame.x1 / 100 + padding.left,
+                  yref = oldHeight * frame.y1 / 100 + padding.top;
+            const wref = oldWidth * (frame.x2 - frame.x1) / 100 - padding.left - padding.right,
+                  href = oldHeight * (frame.y2 - frame.y1) / 100 - padding.top - padding.bottom;
+            // get the new reference frame
+            const xnew = newWidth * frame.x1 / 100 + padding.left,
+                  ynew = newHeight * frame.y1 / 100 + padding.top;
+            const wnew = newWidth * (frame.x2 - frame.x1) / 100 - padding.left - padding.right,
+                  hnew = newHeight * (frame.y2 - frame.y1) / 100 - padding.top - padding.bottom;
+            if (oldWidth !== newWidth) {
+                switch (copy.align.alignX) {
+                case 'start':
+                    copy.x += xnew - xref;
+                    break;
+                case 'both':
+                    copy.x += xnew - xref;
+                    copy.width += wnew - wref;
+                    break;
+                case 'end':
+                    copy.x += wnew - wref + xnew - xref;
+                    break;
+                case 'center':
+                    copy.x += (wnew - wref) / 2 + xnew - xref;
+                    break;
+                case 'scale': {
+                    const k = wnew / wref || 1;
+                    copy.width *= k;
+                    copy.x = (copy.x - xref) * k + xnew;
+                } break;
+                default:
+                }
+            }
+
+            if (oldHeight !== newHeight) {
+                switch (copy.align.alignY) {
+                case 'start':
+                    copy.y += ynew - yref;
+                    break;
+                case 'both':
+                    copy.y += ynew - yref;
+                    copy.height += hnew - href;
+                    break;
+                case 'end':
+                    copy.y += hnew - href + ynew - yref;
+                    break;
+                case 'center':
+                    copy.y += (hnew - href) / 2 + ynew - yref;
+                    break;
+                case 'scale': {
+                    const k = hnew / href || 1;
+                    copy.height *= k;
+                    copy.y = (copy.y - yref) * k + ynew;
+                } break;
+                default:
+                }
+            }
+        }
+    }
+
+    // eslint-disable-next-line max-lines-per-function
+    constructor(template: ExportedRoom, isRoot: boolean) {
         super();
         this.x = this.y = 0;
         this.sortableChildren = true;
@@ -89,10 +175,12 @@ export class Room extends PIXI.Container<pixiMod.DisplayObject> {
             this.follow = template.follow;
             this.viewWidth = template.width;
             this.viewHeight = template.height;
+            this.behaviors = [...template.behaviors];
             if (template.extends) {
                 Object.assign(this, template.extends);
             }
-            if (this === roomsLib.current) {
+            if (isRoot) {
+                roomsLib.current = this;
                 (pixiApp.renderer as pixiMod.Renderer).background.color =
                     uLib.hexToPixi(this.template.backgroundColor);
             }
@@ -118,7 +206,7 @@ export class Room extends PIXI.Container<pixiMod.DisplayObject> {
                 const copy = template.objects[i];
                 const exts = copy.exts || {};
                 const customProperties = copy.customProperties || {};
-                templatesLib.copyIntoRoom(
+                const ctCopy = templatesLib.copyIntoRoom(
                     copy.template,
                     copy.x,
                     copy.y,
@@ -130,10 +218,28 @@ export class Room extends PIXI.Container<pixiMod.DisplayObject> {
                         scaleY: copy.scale.y,
                         rotation: copy.rotation,
                         alpha: copy.opacity,
-                        tint: copy.tint
+                        tint: copy.tint,
+                        customSize: copy.customSize,
+                        customWordWrap: copy.customWordWrap,
+                        customText: copy.customText,
+                        customAnchor: copy.customAnchor,
+                        align: copy.align
                     }
                 );
+                if (copy.align) {
+                    this.alignElements.push(ctCopy);
+                }
             }
+            if (this.alignElements.length) {
+                this.realignElements(
+                    template.width,
+                    template.height,
+                    mainCamera.width,
+                    mainCamera.height
+                );
+            }
+        } else {
+            this.behaviors = [];
         }
         return this;
     }
@@ -149,6 +255,7 @@ export class Room extends PIXI.Container<pixiMod.DisplayObject> {
     set y(value: number) {
         this.position.y = -value;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
 Room.roomId = 0;
@@ -236,8 +343,8 @@ const roomsLib = {
         room.kill = true;
         pixiApp.stage.removeChild(room);
         for (const copy of room.children) {
-            if (copy instanceof Copy) {
-                copy.kill = true;
+            if (copyTypeSymbol in copy) {
+                (copy as BasicCopy).kill = true;
             }
         }
         room.onLeave();
@@ -276,7 +383,7 @@ const roomsLib = {
         if (!(roomName in roomsLib.templates)) {
             throw new Error(`[rooms.append] append failed: the room ${roomName} does not exist!`);
         }
-        const room = new Room(roomsLib.templates[roomName]);
+        const room = new Room(roomsLib.templates[roomName], false);
         if (exts) {
             Object.assign(room, exts);
         }
@@ -299,7 +406,7 @@ const roomsLib = {
         if (!(roomName in roomsLib.templates)) {
             throw new Error(`[rooms] prepend failed: the room ${roomName} does not exist!`);
         }
-        const room = new Room(roomsLib.templates[roomName]);
+        const room = new Room(roomsLib.templates[roomName], false);
         if (exts) {
             Object.assign(room, exts);
         }
@@ -365,21 +472,19 @@ const roomsLib = {
         roomsLib.clear();
         deadPool.length = 0;
         var template = roomsLib.templates[roomName];
-        console.log(template);
         mainCamera.reset(
             template.width / 2,
             template.height / 2,
             template.width,
             template.height
         );
-        console.log(mainCamera.width, mainCamera.height);
         if (template.cameraConstraints) {
             mainCamera.minX = template.cameraConstraints.x1;
             mainCamera.maxX = template.cameraConstraints.x2;
             mainCamera.minY = template.cameraConstraints.y1;
             mainCamera.maxY = template.cameraConstraints.y2;
         }
-        roomsLib.current = new Room(template);
+        roomsLib.current = new Room(template, true);
         pixiApp.stage.addChild(roomsLib.current);
         updateViewport();
         roomsLib.rootRoomOnCreate.apply(roomsLib.current);
@@ -391,34 +496,46 @@ const roomsLib = {
         roomsLib.switching = false;
         nextRoom = void 0;
     },
-    onCreate(): void {
+    onCreate(this: Room): void {
         /*!%roomoncreate%*/
+        if (this.behaviors.length) {
+            runBehaviors(this, 'rooms', 'thisOnCreate');
+        }
     },
-    onLeave(): void {
+    onLeave(this: Room): void {
         /*!%roomonleave%*/
+        if (this.behaviors.length) {
+            runBehaviors(this, 'rooms', 'thisOnDestroy');
+        }
     },
-    beforeStep(): void {
+    beforeStep(this: Room): void {
         /*!%beforeroomstep%*/
     },
-    afterStep(): void {
+    afterStep(this: Room): void {
         /*!%afterroomstep%*/
+        if (this.behaviors.length) {
+            runBehaviors(this, 'rooms', 'thisOnStep');
+        }
     },
-    beforeDraw(): void {
+    beforeDraw(this: Room): void {
         /*!%beforeroomdraw%*/
     },
-    afterDraw(): void {
+    afterDraw(this: Room): void {
         /*!%afterroomdraw%*/
+        if (this.behaviors.length) {
+            runBehaviors(this, 'rooms', 'thisOnDraw');
+        }
     },
-    rootRoomOnCreate(): void {
+    rootRoomOnCreate(this: Room): void {
         /*!@rootRoomOnCreate@*/
     },
-    rootRoomOnStep(): void {
+    rootRoomOnStep(this: Room): void {
         /*!@rootRoomOnStep@*/
     },
-    rootRoomOnDraw(): void {
+    rootRoomOnDraw(this: Room): void {
         /*!@rootRoomOnDraw@*/
     },
-    rootRoomOnLeave(): void {
+    rootRoomOnLeave(this: Room): void {
         /*!@rootRoomOnLeave@*/
     },
     /**

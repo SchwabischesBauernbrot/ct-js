@@ -7,10 +7,10 @@ import * as sounds from './sounds';
 import * as rooms from './rooms';
 import * as templates from './templates';
 import * as styles from './styles';
-import * as skeletons from './skeletons';
+import * as behaviors from './behaviors';
 
 import getUid from '../generateGUID';
-import {getLanguageJSON} from '../i18n';
+import {getLanguageJSON, getByPath} from '../i18n';
 
 /**
  * The interface that describe additional asset actions callable through a context menu.
@@ -47,10 +47,22 @@ export interface IAssetContextItem {
 interface IResourceAPI {
     areThumbnailsIcons: boolean;
     getThumbnail: (asset: assetRef | IAsset, x2?: boolean, fs?: boolean) => string;
+    /**
+     * An optional method that returns a list of icons used to graphically characterize
+     * an asset in an asset browser.
+     */
+    getIcons?: (asset: IAsset) => string[];
+    /**
+     * An optional method for retrieving the name of an asset.
+     * If not set, the asset's `name` property is used.
+     */
     getName?: (asset: string | IAsset) => string;
     createAsset: (payload?: unknown) =>
         Promise<IAsset> | IAsset;
-    /** Optional as there can be no cleanup needed for specific asset types */
+    /**
+     * Optional as there can be no cleanup needed for specific asset types.
+     * These methods should never be called directly from UI.
+     */
     removeAsset?: (asset: assetRef | IAsset) => Promise<void> | void;
     reimportAsset?: (asset: assetRef | IAsset) => Promise<void>;
     assetContextMenuItems?: IAssetContextItem[];
@@ -58,12 +70,12 @@ interface IResourceAPI {
 const typeToApiMap: Record<resourceType, IResourceAPI> = {
     font: fonts,
     room: rooms,
-    skeleton: skeletons,
     sound: sounds,
     style: styles,
     tandem: emitterTandems,
     template: templates,
-    texture: textures
+    texture: textures,
+    behavior: behaviors
 };
 /** Names of all possible asset types */
 export const assetTypes = Object.keys(typeToApiMap) as resourceType[];
@@ -74,10 +86,10 @@ type typeToTsTypeMap = {
         T extends 'room' ? IRoom :
         T extends 'sound' ? ISound :
         T extends 'style' ? IStyle :
-        T extends 'skeleton' ? ISkeleton :
         T extends 'texture' ? ITexture :
         T extends 'tandem' ? ITandem :
-        T extends 'template'? ITemplate :
+        T extends 'template' ? ITemplate :
+        T extends 'behavior' ? IBehavior :
         never;
 }
 
@@ -316,14 +328,40 @@ export const moveFolder = (
  * Deletes the asset from the project. This is the method that must be used in the UI.
  */
 export const deleteAsset = async (asset: IAsset): Promise<void> => {
+    // Execute additional cleanup steps for this asset type, if applicable
     if ('removeAsset' in typeToApiMap[asset.type]) {
         await typeToApiMap[asset.type].removeAsset(asset);
     }
+    // Clear asset references from content types' entries
+    for (const contentType of window.currentProject.contentTypes) {
+        for (const entry of contentType.entries) {
+            for (const key in entry) {
+                if (Array.isArray(entry[key])) {
+                    (entry[key] as []).filter(val => val !== asset.uid);
+                } else if (entry[key] === asset.uid) {
+                    entry[key] = -1;
+                }
+            }
+        }
+    }
+    // Do the same for potential behaviors' keys
+    for (const other of [...getOfType('room'), ...getOfType('template')]) {
+        for (const key in other.extends) {
+            if (Array.isArray(other.extends[key])) {
+                (other.extends[key] as []).filter(val => val !== asset.uid);
+            } else if (other.extends[key] === asset.uid) {
+                other.extends[key] = -1;
+            }
+        }
+    }
+    // Remove from the parent folder
     const collection = collectionMap.get(asset);
     collection.splice(collection.indexOf(asset), 1);
+    // Clear references from converting maps and
     uidMap.delete(asset.uid);
     folderMap.delete(asset);
     collectionMap.delete(asset);
+    // Notify the UI about asset removal
     window.signals.trigger('assetRemoved', asset.uid);
     window.signals.trigger(`${asset.type}Removed`, asset.uid);
 };
@@ -364,13 +402,15 @@ export const deleteFolder = (
  * Relies on caches in the textures and skeletons submodules.
  * @async
  */
-export const getDOMImage = (asset: ISkeleton | ITemplate | ITexture): HTMLImageElement => {
+export const getDOMImage = (asset: ITemplate | ITexture): HTMLImageElement => {
     if (asset.type === 'texture') {
         return textures.getDOMTexture(asset);
-    } else if (asset.type === 'template') {
+    }
+    if (asset.type === 'template') {
         return templates.getDOMTexture(asset);
     }
-    return skeletons.getDOMSkeleton(asset);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    throw new Error('[resources.getDOMImage] Unknown asset type: ' + (asset as any).type + '.');
 };
 
 export const areThumbnailsIcons = (asset: IAsset | IAssetFolder): boolean => {
@@ -385,6 +425,8 @@ export const getThumbnail = (asset: IAsset | IAssetFolder, x2?: boolean, fs?: bo
     }
     return typeToApiMap[asset.type].getThumbnail(asset, x2, fs);
 };
+export const getIcons = (asset: IAsset): string[] =>
+    typeToApiMap[asset.type].getIcons?.(asset) ?? [];
 export const getName = (asset: IAsset | IAssetFolder): string => {
     if (asset.type === 'folder') {
         return asset.name;
@@ -393,12 +435,28 @@ export const getName = (asset: IAsset | IAssetFolder): string => {
         typeToApiMap[asset.type].getName(asset) :
         (asset as IAsset & {name: string}).name;
 };
-export const getContextActions = (asset: IAsset): IAssetContextItem[] => {
+export const getContextActions = (
+    asset: IAsset,
+    callback?: (asset: IAsset) => unknown
+): IMenuItem[] => {
     const api = typeToApiMap[asset.type];
     if (!api.assetContextMenuItems) {
         return [];
     }
-    return api.assetContextMenuItems.filter(item => !item.if || item.if(asset));
+    const actions: IMenuItem[] = api.assetContextMenuItems
+        .filter(item => !item.if || item.if(asset))
+        .map(item => ({
+            label: getByPath(item.vocPath) as string,
+            icon: item.icon,
+            click: async () => {
+                await item.action(asset, collectionMap.get(asset), folderMap.get(asset));
+                if (callback) {
+                    callback(asset);
+                }
+            },
+            checked: item.checked && (() => item.checked(asset))
+        }));
+    return actions;
 };
 
 export const resourceToIconMap: Record<resourceType, string> = {
@@ -409,17 +467,19 @@ export const resourceToIconMap: Record<resourceType, string> = {
     room: 'room',
     template: 'template',
     style: 'ui',
-    skeleton: 'skeletal-animation'
+    // skeleton: 'skeletal-animation',
+    behavior: 'behavior'
 };
 export const editorMap: Record<resourceType, string> = {
     font: 'font-editor',
     room: 'room-editor',
-    skeleton: 'skeletal-animation',
+    // skeleton: 'skeletal-animation',
     sound: 'sound-editor',
     style: 'style-editor',
     tandem: 'emitter-tandem-editor',
     template: 'template-editor',
-    texture: 'texture-editor'
+    texture: 'texture-editor',
+    behavior: 'behavior-editor'
 };
 
 export {

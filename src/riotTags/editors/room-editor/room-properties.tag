@@ -1,5 +1,6 @@
 //
     @attribute room
+    @attribute editor
     @attribute updatebg (riot function)
     @attribute history (History)
 room-properties
@@ -17,7 +18,7 @@ room-properties
                     input.wide(
                         type="number" min="1" step="8"
                         onfocus="{parent.rememberValue}"
-                        oninput="{parent.wire('opts.room.width')}"
+                        oninput="{parent.wireAndRealign('opts.room.width')}"
                         onchange="{parent.recordChange(parent.opts.room, 'width')}"
                         value="{parent.opts.room.width}"
                     )
@@ -28,7 +29,7 @@ room-properties
                     input.wide(
                         type="number" min="1" step="8"
                         onfocus="{parent.rememberValue}"
-                        oninput="{parent.wire('opts.room.height')}"
+                        oninput="{parent.wireAndRealign('opts.room.height')}"
                         onchange="{parent.recordChange(parent.opts.room, 'height')}"
                         value="{parent.opts.room.height}"
                     )
@@ -107,7 +108,6 @@ room-properties
             color="{opts.room.backgroundColor || '#000000'}"
             hidealpha="hidealpha"
         )
-
     fieldset
         label.block.checkbox
             input(
@@ -115,6 +115,22 @@ room-properties
                 onchange="{handleToggle(opts.room, 'isUi')}"
             )
             b {voc.isUi}
+
+    collapsible-section.aPanel(
+        heading="{vocGlob.assetTypes.behavior[2].slice(0, 1).toUpperCase() + vocGlob.assetTypes.behavior[2].slice(1)}"
+        storestatekey="roomBehaviors"
+        hlevel="4"
+    )
+        behavior-list(
+            onchanged="{parent.updateBehaviorExtends}"
+            asset="{parent.opts.room}"
+        )
+    .aSpacer(if="{behaviorExtends.length}")
+    extensions-editor(
+        entity="{opts.room.extends}"
+        customextends="{behaviorExtends}"
+        compact="compact" wide="wide"
+    )
 
     fieldset
         extensions-editor(entity="{opts.room.extends}" type="room" wide="true" compact="true")
@@ -147,6 +163,15 @@ room-properties
                 before: prevValue,
                 after: value
             });
+        };
+        this.wireAndRealign = key => e => {
+            const val = Number(e.target.value);
+            if (key === 'opts.room.width') {
+                this.opts.editor.repositionUiCopies(val, this.opts.room.height);
+            } else {
+                this.opts.editor.repositionUiCopies(this.opts.room.width, val);
+            }
+            this.wire(key)(e);
         };
 
         this.setFollow = uid => {
@@ -184,3 +209,22 @@ room-properties
                 after: entity[key]
             });
         };
+
+        const {schemaToExtensions} = require('./data/node_requires/resources/content');
+        const {getById} = require('./data/node_requires/resources');
+        this.behaviorExtends = [];
+        this.updateBehaviorExtends = () => {
+            this.behaviorExtends = [];
+            for (const behaviorUid of this.opts.room.behaviors) {
+                const behavior = getById('behavior', behaviorUid);
+                if (behavior.specification.length) {
+                    this.behaviorExtends.push({
+                        name: behavior.name,
+                        type: 'group',
+                        items: schemaToExtensions(behavior.specification)
+                    });
+                }
+            }
+            this.update();
+        };
+        this.updateBehaviorExtends();

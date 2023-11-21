@@ -1,4 +1,4 @@
-template-editor, [data-is="template-editor"]
+template-editor, [data-is="template-editor"], behavior-editor, [data-is="behavior-editor"]
     .aNav
         border-bottom-left-radius 0
         border-bottom-right-radius 0
@@ -35,7 +35,7 @@ template-editor, [data-is="template-editor"]
     flex-flow row nowrap
     padding 1rem
 
-template-editor
+template-editor, behavior-editor
     .&-Properties
         flex 0 0 19rem
         margin 0 1rem
@@ -94,3 +94,43 @@ template-editor
         border-top-left-radius 0
         border-bottom-right-radius 0
         margin 0
+
+.aNinePatchGrid
+    display grid
+    gap 2px
+    border 2px solid borderBright
+    border-radius 1.5rem
+    grid-template-columns 1fr 1fr 1fr
+    grid-template-rows 1fr 1fr 1fr
+    align-items center
+    justify-items center
+    aspect-ratio 1
+    background linear-gradient(
+        to bottom,
+        transparent 0 33%,
+        borderBright 33% 34%,
+        transparent 34% 66%,
+        borderBright 66% 67%,
+        transparent 67% 100%
+    ), linear-gradient(
+        to right,
+        backgroundDeeper 0 33%,
+        borderBright 33% 34%,
+        backgroundDeeper 34% 66%,
+        borderBright 66% 67%,
+        backgroundDeeper 67% 100%
+    )
+.aNinePatchElement
+    width 2.5rem
+    &.top
+        grid-column 2
+        grid-row 1
+    &.left
+        grid-column 1
+        grid-row 2
+    &.bottom
+        grid-column 2
+        grid-row 3
+    &.right
+        grid-column 3
+        grid-row 2

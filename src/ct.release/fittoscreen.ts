@@ -1,6 +1,6 @@
-import { viewMode } from '../node_requires/exporter/_exporterContracts';
+import type {viewMode} from '../node_requires/exporter/_exporterContracts';
 
-import roomsLib from 'rooms';
+import roomsLib, {Room} from 'rooms';
 import {settings, pixiApp} from 'index';
 import mainCamera from 'camera';
 
@@ -13,7 +13,7 @@ const positionCanvas = function positionCanvas(mode: viewMode, scale: number): v
         canv.style.position = 'absolute';
         canv.style.top = '50%';
         canv.style.left = '50%';
-    } else if (mode === 'expandViewport' || mode === 'expand' || mode === 'scaleFill') {
+    } else if (mode === 'expand' || mode === 'scaleFill') {
         canv.style.position = 'static';
         canv.style.top = 'unset';
         canv.style.left = 'unset';
@@ -26,7 +26,7 @@ const positionCanvas = function positionCanvas(mode: viewMode, scale: number): v
         canv.style.transform = canv.style.position = canv.style.top = canv.style.left = '';
     }
 };
-export const updateViewport = () => {
+export const updateViewport = (): void => {
     const mode = settings.viewMode;
     const pixelScaleModifier = settings.highDensity ? (window.devicePixelRatio || 1) : 1;
     const kw = window.innerWidth / roomsLib.current.viewWidth,
@@ -39,7 +39,7 @@ export const updateViewport = () => {
         canvasHeight: number,
         cameraWidth: number,
         cameraHeight: number;
-    if (mode === 'expandViewport' || mode === 'expand') {
+    if (mode === 'expand') {
         canvasWidth = Math.ceil(window.innerWidth * pixelScaleModifier);
         canvasHeight = Math.ceil(window.innerHeight * pixelScaleModifier);
         cameraWidth = window.innerWidth;
@@ -67,7 +67,6 @@ export const updateViewport = () => {
     }
 
     pixiApp.renderer.resize(canvasWidth, canvasHeight);
-    console.log(roomsLib.current.viewWidth, canvasWidth, canvasHeight);
     if (mode !== 'scaleFill' && mode !== 'scaleFit') {
         pixiApp.stage.scale.x = pixiApp.stage.scale.y = pixelScaleModifier;
     } else {
@@ -75,28 +74,42 @@ export const updateViewport = () => {
     }
     pixiApp.view.style.width = Math.ceil(canvasWidth / pixelScaleModifier) + 'px';
     pixiApp.view.style.height = Math.ceil(canvasHeight / pixelScaleModifier) + 'px';
+
     if (mainCamera) {
+        const oldWidth = mainCamera.width,
+              oldHeight = mainCamera.height;
         mainCamera.width = cameraWidth;
         mainCamera.height = cameraHeight;
+        for (const item of pixiApp.stage.children) {
+            if (!(item instanceof Room)) {
+                continue;
+            }
+            item.realignElements(oldWidth, oldHeight, cameraWidth, cameraHeight);
+        }
     }
     positionCanvas(mode, k);
 };
 window.addEventListener('resize', updateViewport);
 
 /**
- * Tries to toggle the fullscreen mode. Errors, if any, will be logged to console. Also, this won't work in the internal ct.js debugger. Instead, test it in your browser.
+ * Tries to toggle the fullscreen mode.
+ * Errors, if any, will be logged to console.
+ * Also, this won't work in the internal ct.js debugger.
+ * Instead, test it in your browser.
  *
- * This should be called on mouse / keyboard press event, not the "release" event, or the actual transition will happen on the next mouse/keyboard interaction. For example, this will work:
+ * This should be called on mouse / keyboard press event,
+ * not the "release" event, or the actual transition will happen
+ * on the next mouse/keyboard interaction. For example, this will work:
  *
  * ```js
- * if (ct.mouse.pressed) {
- *   if (ct.u.prect(ct.mouse.x, ct.mouse.y, this)) {
- *     ct.fittoscreen.toggleFullscreen();
+ * if (pointer.pressed) {
+ *   if (u.prect(pointer.x, pointer.y, this)) {
+ *     fittoscreen.toggleFullscreen();
  *   }
  * }
  * ```
  */
-export const toggleFullscreen = function () {
+export const toggleFullscreen = function (): void {
     try {
         // Are we in Electron?
         const win = require('electron').remote.BrowserWindow.getFocusedWindow();
@@ -120,7 +133,7 @@ export const toggleFullscreen = function () {
     }
 };
 
-export const getIsFullscreen = function getIsFullscreen() {
+export const getIsFullscreen = function getIsFullscreen(): boolean {
     try {
         // Are we in Electron?
         const win = require('electron').remote.BrowserWindow.getFocusedWindow;

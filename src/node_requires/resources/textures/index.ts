@@ -88,7 +88,7 @@ const texturesFromCtTexture = async (
             }
         }
     }
-    pixiTextureCache[tex.name] = {
+    pixiTextureCache[tex.uid] = {
         lastmod: tex.lastmod,
         texture: frames
     };
@@ -215,9 +215,9 @@ function getPixiTexture(
         texture = getById('texture', texture);
     }
     if (frame || frame === 0) {
-        return pixiTextureCache[texture.name].texture[frame];
+        return pixiTextureCache[texture.uid].texture[frame];
     }
-    return pixiTextureCache[texture.name].texture;
+    return pixiTextureCache[texture.uid].texture;
 }
 
 /**
@@ -403,7 +403,7 @@ const reimportTexture = async (
 const removeTexture = (tex: string | ITexture): void => {
     tex = ensureTex(tex);
     const {uid} = tex;
-    for (const [uid, asset] of uidMap) {
+    for (const [, asset] of uidMap) {
         if (asset.type === 'template') {
             if ((asset as ITemplate).texture === uid) {
                 (asset as ITemplate).texture = -1;
@@ -470,7 +470,7 @@ const setPixelart = (pixelart: boolean): void => {
 
 export const assetContextMenuItems: IAssetContextItem[] = [{
     vocPath: 'texture.createTemplate',
-    icon: 'loader',
+    icon: 'template',
     action: async (
         asset: ITexture,
         collection: folderEntries,
@@ -478,6 +478,7 @@ export const assetContextMenuItems: IAssetContextItem[] = [{
     ): Promise<void> => {
         const template = await createAsset('template', folder, asset.name);
         template.texture = asset.uid;
+        template.name = asset.name;
     }
 }];
 

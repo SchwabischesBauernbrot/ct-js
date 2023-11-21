@@ -2,8 +2,6 @@ import {FontPreviewer} from './font';
 import {RoomPreviewer} from './room';
 import {StylePreviewer} from './style';
 import {TexturePreviewer} from './texture';
-import {SkeletonPreviewer} from './skeleton';
-import {SoundPreviewer} from './sound';
 import {getByTypes} from '..';
 import {getStartingRoom} from '../rooms';
 
@@ -21,11 +19,10 @@ export const preparePreviews = async function (
 
     if (trashOrphans) {
         const imagesToKeep = [
-            ...FontPreviewer.retain(assets.font),
-            ...RoomPreviewer.retain(assets.room),
-            ...StylePreviewer.retain(assets.style),
-            ...TexturePreviewer.retain(assets.texture),
-            ...SkeletonPreviewer.retain(assets.skeleton)
+            ...FontPreviewer.retain(),
+            ...RoomPreviewer.retain(),
+            ...StylePreviewer.retain(),
+            ...TexturePreviewer.retain(assets.texture)
         ];
 
         const imgFilenames = fs.readdirSync(global.projdir + '/img');
@@ -49,8 +46,7 @@ export const preparePreviews = async function (
                 ...FontPreviewer.retainPreview(assets.font),
                 ...RoomPreviewer.retainPreview(assets.room),
                 ...StylePreviewer.retainPreview(assets.style),
-                ...TexturePreviewer.retainPreview(assets.texture),
-                ...SkeletonPreviewer.retainPreview(assets.skeleton)
+                ...TexturePreviewer.retainPreview(assets.texture)
             ];
 
             const previewFilenames = fs.readdirSync(global.projdir + '/prev');
@@ -103,18 +99,6 @@ export const preparePreviews = async function (
     generationPromises.push(...assets.texture.map(async (texture: ITexture) => {
         if (!(await fileExists(TexturePreviewer.get(texture, true)))) {
             return TexturePreviewer.save(texture);
-        }
-        return Promise.resolve();
-    }));
-    generationPromises.push(...assets.skeleton.map(async (skeleton: ISkeleton) => {
-        if (!(await fileExists(SkeletonPreviewer.get(skeleton, true)))) {
-            return SkeletonPreviewer.save(skeleton);
-        }
-        return Promise.resolve();
-    }));
-    generationPromises.push(...assets.sound.map(async (sound: ISound) => {
-        if (!(await fileExists(SoundPreviewer.get(sound, true)))) {
-            return SoundPreviewer.save(sound);
         }
         return Promise.resolve();
     }));

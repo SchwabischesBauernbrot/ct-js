@@ -41,7 +41,12 @@ app-view.flexcol
                         svg.feather
                             use(xlink:href="#{iconMap[asset.type]}")
                         span {getName(asset)}
-                        svg.feather.anActionableIcon(onclick="{closeAsset}")
+                        .app-view-anUnsavedIcon(if="{tabsDirty[ind]}" onclick="{closeAsset}")
+                            svg.feather.anActionableIcon.warning
+                                use(xlink:href="#circle")
+                            svg.feather.anActionableIcon
+                                use(xlink:href="#x")
+                        svg.feather.anActionableIcon(if="{!tabsDirty[ind]}" onclick="{closeAsset}")
                             use(xlink:href="#x")
             li.nogrow.noshrink.relative.bl(onclick="{callTour}" data-hotkey="F1" title="{voc.tour.header}")
                 .aPulser(if="{!localStorage.wizardUsed}")
@@ -96,8 +101,15 @@ app-view.flexcol
 
         this.tab = 'assets'; // A tab can be either a string ('project', 'assets', etc.) or an asset object
         this.openedAssets = [];
+        this.tabsDirty = [];
+        this.refreshDirty = () => {
+            const tabs = this.refs.openedEditors || [];
+            this.tabsDirty = (Array.isArray(tabs) ? tabs : [tabs])
+                .map(riotTab => riotTab.isDirty());
+        };
         this.changeTab = tab => () => {
             this.tab = tab;
+            this.refreshDirty();
             window.hotkeys.cleanScope();
             window.signals.trigger('globalTabChanged', tab);
             if (typeof tab === 'string') {
@@ -106,15 +118,17 @@ app-view.flexcol
                 window.hotkeys.push(tab);
             } else {
                 // The current tab is an asset
-                if (tab.type === 'room' || tab.type === 'template') {
+                if (['room', 'template', 'behavior'].includes(tab.type)) {
                     window.orders.trigger('forceCodeEditorLayout');
                 }
                 window.hotkeys.push(tab.uid);
             }
         };
-        this.assetTabClick = asset => e => {
-            console.log(e);
-        };
+        window.signals.on('assetChanged', this.refreshDirty);
+        this.on('unmount', () => {
+            window.signals.off('assetChanged', this.refreshDirty);
+        });
+
         const resources = require('./data/node_requires/resources');
         this.editorMap = resources.editorMap;
         this.getName = resources.getName;
@@ -137,7 +151,8 @@ app-view.flexcol
                     tabs[newPos].scrollIntoView();
                 }, 100);
             } else if (noOpen) {
-                console.warn('[app-view] An already opened asset was called with noOpen. This is probably a bug as you either do open assets or create them elsewhere without opening.')
+                // eslint-disable-next-line no-console
+                console.warn('[app-view] An already opened asset was called with noOpen. This is probably a bug as you either do open assets or create them elsewhere without opening.');
             }
             if (!noOpen) {
                 this.changeTab(asset)();
@@ -147,7 +162,7 @@ app-view.flexcol
             this.openAsset(asset)();
             this.update();
         };
-        this.rerouteOpenAsset2 = asset => e => {
+        this.rerouteOpenAsset2 = asset => () => {
             this.openAsset(asset)();
             this.update();
         };
@@ -175,7 +190,7 @@ app-view.flexcol
         this.on('unmount', () => {
             window.orders.off('openAssets', assetsOpenOrder);
         });
-        this.closeAsset = async e => {
+        this.closeAsset = e => {
             e.stopPropagation();
             e.preventDefault();
             const {asset, ind} = e.item;

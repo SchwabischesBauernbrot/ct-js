@@ -9,7 +9,9 @@
     @attribute [onimported]
         Called when a new asset is created by this component.
         The created asset is passed to the callback as its only argument.
-create-asset-menu.relative.inlineblock
+
+    @attribute [class]
+create-asset-menu.relative.inlineblock(class="{opts.class}")
     button.success(onclick="{showMenu}" class="{inline: opts.inline, square: opts.square}")
         svg.feather
             use(xlink:href="#plus")
@@ -26,6 +28,7 @@ create-asset-menu.relative.inlineblock
         this.mixin(require('./data/node_requires/riotMixins/voc').default);
 
         const priorityTypes = ['texture', 'template', 'room'];
+        const customizedTypes = ['behavior'];
 
         const {assetTypes, resourceToIconMap, createAsset} = require('./data/node_requires/resources');
 
@@ -40,7 +43,7 @@ create-asset-menu.relative.inlineblock
 
         const menuItems = [];
         const assetTypeIterator = assetType => {
-            const i18nName = this.vocGlob.assetTypes[assetType][0];
+            const [i18nName] = this.vocGlob.assetTypes[assetType];
             menuItems.push({
                 label: i18nName[0].toUpperCase() + i18nName.slice(1),
                 icon: resourceToIconMap[assetType],
@@ -64,7 +67,59 @@ create-asset-menu.relative.inlineblock
         menuItems.push({
             type: 'separator'
         });
-        assetTypes.filter(assetType => !priorityTypes.includes(assetType)).forEach(assetTypeIterator);
+        assetTypes
+            .filter(assetType => !priorityTypes.includes(assetType) &&
+                !customizedTypes.includes(assetType))
+            .forEach(assetTypeIterator);
+
+        // Behaviors need a subtype preset
+        const bhVoc = this.vocGlob.assetTypes.behavior;
+        menuItems.push({
+            label: bhVoc[1].slice(0, 1).toUpperCase() + bhVoc[1].slice(1),
+            icon: 'behavior',
+            submenu: {
+                items: [{
+                    label: this.voc.behaviorTemplate,
+                    icon: 'behavior',
+                    click: async () => {
+                        const asset = await createAsset('behavior', this.opts.folder || null, {
+                            behaviorType: 'template'
+                        });
+                        if (this.opts.onimported) {
+                            this.opts.onimported(asset);
+                        }
+                    }
+                }, {
+                    label: this.voc.behaviorRoom,
+                    icon: 'behavior',
+                    click: async () => {
+                        const asset = await createAsset('behavior', this.opts.folder || null, {
+                            behaviorType: 'room'
+                        });
+                        if (this.opts.onimported) {
+                            this.opts.onimported(asset);
+                        }
+                    }
+                }, {
+                    label: this.voc.behaviorImport,
+                    icon: 'download',
+                    click: async () => {
+                        const src = await window.showOpenDialog({
+                            filter: '.ctBehavior'
+                        });
+                        if (!src) {
+                            return;
+                        }
+                        const asset = await createAsset('behavior', this.opts.folder || null, {
+                            src
+                        });
+                        if (this.opts.onimported) {
+                            this.opts.onimported(asset);
+                        }
+                    }
+                }]
+            }
+        });
         menuItems.push({
             type: 'separator'
         });
@@ -75,7 +130,8 @@ create-asset-menu.relative.inlineblock
                 this.tool = 'textureGenerator';
                 this.update();
             }
-        })
+        });
+
         this.menu = {
             opened: false,
             items: menuItems

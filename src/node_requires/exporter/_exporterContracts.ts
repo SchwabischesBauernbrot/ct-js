@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /* eslint-disable spaced-comment */
 /// <reference path="../resources/textures/ITexture.d.ts" />
+/// <reference path="../resources/templates/ITemplate.d.ts" />
 /// <reference path="../resources/emitterTandems/types.d.ts" />
 /// <reference path="../resources/rooms/IRoom.d.ts" />
 /// <reference path="../resources/sounds/types.d.ts" />
@@ -40,11 +41,19 @@ export type ExportedSkeleton = {
     dataPath: string;
 };
 
-export type ExportedTandem = {
+export type ExportedEmitter = {
     texture: string;
-    settings: ITandem['emitters'][0]['settings'];
-}[];
-
+    textureBehavior: ITandemEmitter['textureBehavior'];
+    animatedSingleFramerate: number;
+    settings: Omit<ITandem['emitters'][0]['settings'], 'behaviors'> & {
+        delay: number;
+        behaviors: {
+            type: string;
+            config: Record<string, any>;
+        }[]
+    };
+};
+export type ExportedTandem = ExportedEmitter[];
 export type ExportedTandems = Record<string, ExportedTandem>;
 
 export type ExportedTile = {
@@ -66,7 +75,7 @@ export type ExportedTile = {
 export type ExportedTilemap = {
     depth: number;
     tiles: ExportedTile[];
-    extends: {cgroup?: string} & Record<string, any>;
+    extends: {cgroup?: string} & Record<string, unknown>;
 }
 export type ExportedCopy = Omit<IRoomCopy, 'uid'> & {template: string};
 
@@ -88,13 +97,13 @@ export type ExportedBg = {
 
 export type ExportedRoom = {
     name: string;
-    group: string;
     width: number;
     height: number;
     objects: ExportedCopy[];
     bgs: ExportedBg[];
     tiles: ExportedTilemap[];
     backgroundColor: string;
+    behaviors: string[];
     cameraConstraints?: {
         x1: number,
         y1: number,
@@ -107,28 +116,41 @@ export type ExportedRoom = {
     onCreate: () => void;
     isUi: boolean;
     follow: -1 | string;
-    extends: Record<string, any>;
+    extends: Record<string, unknown>;
 }
 
 export type ExportedTemplate = {
-    texture?: string;
+    name: string;
     anchorX?: number;
     anchorY?: number;
     height?: number;
     width?: number;
     depth: number;
     blendMode: PIXI.BLEND_MODES;
-    animationFPS: number;
-    playAnimationOnStart: boolean;
-    loopAnimation: boolean;
     visible: boolean;
-    group?: string;
+    behaviors: string[];
     onStep: () => void;
     onDraw: () => void;
     onDestroy: () => void;
     onCreate: () => void;
-    extends: Record<string, any>;
-}
+    extends: Record<string, unknown>;
+} & ({
+    baseClass: 'AnimatedSprite';
+    animationFPS: number;
+    playAnimationOnStart: boolean;
+    loopAnimation: boolean;
+    texture?: string;
+} | {
+    baseClass: 'Text';
+    textStyle: string | -1;
+    defaultText: string;
+} | {
+    baseClass: 'NineSlicePlane';
+    nineSliceSettings: ITemplate['nineSliceSettings'];
+    texture?: string;
+} | {
+    baseClass: 'Container'
+});
 
 export type ExportedMeta = {
     name: string;
@@ -159,3 +181,11 @@ export type ExportedStyle = {
 }
 
 export type ExportedSound = Omit<ISound, 'uid' | 'group' | 'lastmod' | 'type'>;
+
+export type ExportedBehaviorDynamic = {
+    thisOnStep?: () => void,
+    thisOnCreate?: () => void,
+    thisOnDraw?: () => void,
+    thisOnDestroy?: () => void
+};
+export type ExportedBehavior = 'static' | ExportedBehaviorDynamic;

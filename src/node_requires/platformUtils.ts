@@ -56,6 +56,7 @@ const mod = {
 
         const exec = path.dirname(process.cwd()).replace(/\\/g, '/');
         // The `HOME` variable is not always available in ct.js on Windows
+        // eslint-disable-next-line no-process-env
         const home = process.env.HOME || ((process.env.HOMEDRIVE || '') + process.env.HOMEPATH);
 
         const execWritable = mod.checkWritable(exec);
@@ -122,8 +123,10 @@ const mod = {
             // Okay, we are in a dev mode
             require('gulp');
             if (createHref) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 return ('file://' + path.posix.normalize(path.join((nw.App as any).startPath, 'bundledAssets')));
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return path.join((nw.App as any).startPath, 'bundledAssets');
         } catch {
             if (createHref) {

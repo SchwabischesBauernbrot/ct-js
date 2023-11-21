@@ -91,4 +91,4 @@ export const loadSound = (asset: ISound): void => {
             preload: true
         });
     }
-};
+}

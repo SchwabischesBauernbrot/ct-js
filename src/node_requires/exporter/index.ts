@@ -11,12 +11,12 @@ import {ExporterError, highlightProblem} from './ExporterError';
 import {ExportedMeta} from './_exporterContracts';
 
 import {packImages} from './textures';
-import {packSkeletons} from './skeletons';
 import {getSounds} from './sounds';
 import {stringifyRooms, getStartingRoom} from './rooms';
 import {stringifyStyles} from './styles';
 import {stringifyTandems} from './emitterTandems';
 import {stringifyTemplates} from './templates';
+import {stringifyBehaviors} from './behaviors';
 import {stringifyContent} from './content';
 import {bundleFonts, bakeBitmapFonts} from './fonts';
 import {bakeFavicons} from './icons';
@@ -260,7 +260,6 @@ const exportCtProject = async (
     }
     /* assets — run in parallel */
     const texturesTask = packImages(assets.texture, writeDir, production);
-    const skeletonsTask = packSkeletons(assets.skeleton, writeDir);
     const bitmapFontsTask = bakeBitmapFonts(assets.font, projdir, writeDir);
     const favicons = bakeFavicons(project, writeDir, production);
     const modulesTask = addModules();
@@ -284,6 +283,7 @@ const exportCtProject = async (
     const fonts = await bundleFonts(assets.font, projdir, writeDir);
     const rooms = stringifyRooms(assets, project);
     const templates = stringifyTemplates(assets, project);
+    const behaviors = stringifyBehaviors(assets.behavior, project);
     const rootRoomOnCreate = rooms.rootRoomOnCreate + '\n' + templates.rootRoomOnCreate;
     const rootRoomOnStep = rooms.rootRoomOnStep + '\n' + templates.rootRoomOnStep;
     const rootRoomOnDraw = rooms.rootRoomOnDraw + '\n' + templates.rootRoomOnDraw;
@@ -331,13 +331,13 @@ const exportCtProject = async (
         rootRoomOnStep,
         rootRoomOnDraw,
         rootRoomOnLeave,
+        behaviorsTemplates: behaviors.templates,
+        behaviorsRooms: behaviors.rooms,
         templates: templates.libCode,
         styles: stringifyStyles(assets.style),
         tandemTemplates: stringifyTandems(assets.tandem),
         fonts: fonts.js,
         bitmapFonts: await bitmapFontsTask,
-        skeletons: (await skeletonsTask).skeletons,
-        includeSpine: (await skeletonsTask).skeletons.length > 0,
 
         userScripts,
         catmods: await modulesTask
@@ -430,16 +430,11 @@ const exportCtProject = async (
         fs.writeFile(path.join(writeDir, cssBundleFilename), css),
         fs.writeFile(path.join(writeDir, jsBundleFilename), buffer)
     ]);
+
     await Promise.all(assets.sound.map(async (sound: ISound) => {
-        const ext = sound.name.slice(-4);
-        // TODO: have to deal with uid not name and deal with variant
-        console.log(sound);
-        console.log('sound.uid', sound.uid);
-        console.log('sound.name', sound.name);
-        console.log('ext', ext);
-        await fs.copy(path.join(projdir, '/snd/', sound.name), path.join(writeDir, '/snd/', sound.uid + ext));
+        const ext = sound.origname.slice(-4);
+        await fs.copy(path.join(projdir, '/snd/', sound.origname), path.join(writeDir, '/snd/', sound.uid + ext));
     }));
-    // TODO: Update for sound cues
 
     return path.join(writeDir, '/index.html');
 };

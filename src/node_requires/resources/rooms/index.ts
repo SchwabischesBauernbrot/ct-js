@@ -1,5 +1,5 @@
 import {RoomPreviewer} from '../preview/room';
-import {getOfType} from '..';
+import {getOfType, IAssetContextItem} from '..';
 
 const getDefaultRoom = require('./defaultRoom').get;
 const fs = require('fs-extra');
@@ -7,7 +7,8 @@ const path = require('path');
 
 const createNewRoom = async function createNewRoom(name: string): Promise<IRoom> {
     const room = getDefaultRoom();
-    await fs.copy('./data/img/notexture.png', path.join((global as any).projdir, '/img/r' + room.uid + '.png'));
+    // TODO: Update to match the new previewing engine
+    await fs.copy('./data/img/notexture.png', path.join(global.projdir, '/img/r' + room.uid + '.png'));
     if (name) {
         room.name = String(name);
     }
@@ -23,6 +24,14 @@ export const getStartingRoom = (): IRoom => {
     return rooms[0];
 };
 
+export const assetContextMenuItems: IAssetContextItem[] = [{
+    icon: 'play',
+    vocPath: 'rooms.makeStarting',
+    action: (asset: IRoom): void => {
+        global.currentProject.startroom = asset.uid;
+    }
+}];
+
 const getThumbnail = RoomPreviewer.getClassic;
 export const areThumbnailsIcons = false;
 
@@ -31,6 +40,32 @@ export const removeAsset = (room: IRoom): void => {
         global.currentProject.startroom = -1;
     }
 };
+
+import {getIcons as getScriptableIcons} from '../scriptables';
+export const getIcons = (asset: IRoom): string[] => {
+    if (asset.uid === window.currentProject.startroom) {
+        return ['play', ...getScriptableIcons(asset)];
+    }
+    return getScriptableIcons(asset);
+};
+
+export const getDefaultAlign = (): IRoomCopy['align'] => ({
+    frame: {
+        x1: 0,
+        y1: 0,
+        x2: 100,
+        y2: 100
+    },
+    alignX: 'start' as CopyAlignment,
+    alignY: 'start' as CopyAlignment,
+    padding: {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0
+    }
+});
+
 
 export {
     createNewRoom,

@@ -29,6 +29,9 @@
         A two-fold callback (item => e => {…}) fired when a user clicks on an item,
         passing the associated collection object as its only argument in the first function,
         and a MouseEvent in a second function
+    @attribute [customfilter] ((asset: IAsset) => boolean)
+        A custom filter function applied to hide separate assets if the function
+        returns `false`.
 
     @method updateList()
         Update the asset viewer, needed when new items were added.
@@ -123,12 +126,15 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                 br
                 span {vocGlob.nothingToShowFiller}
                 .aSpacer(if="{assetTypes[0] === 'all'}")
-                create-asset-menu(
+            .flexrow(if="{!opts.shownone && !(searchResults || entries).length}")
+                .aSpacer
+                create-asset-menu.nogrow(
                     if="{assetTypes[0] === 'all'}"
                     collection="{currentCollection}"
                     folder="{currentFolder}"
                     onimported="{onAssetImported}"
                 )
+                .aSpacer
             ul.Cards(class="{layoutToClassListMap[opts.forcelayout || currentLayout]}")
                 li.aCard(if="{opts.shownone}" onclick="{opts.click && opts.click(-1)}" class="{active: opts.selectedasset === -1}")
                     .aCard-aThumbnail
@@ -164,8 +170,8 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                             svg.feather
                                 use(xlink:href="#{iconMap[asset.type]}")
                             span(if="{!parent.opts.compact}")   {vocGlob.assetTypes[asset.type][0].slice(0, 1).toUpperCase()}{vocGlob.assetTypes[asset.type][0].slice(1)}
-                        .asset-browser-Icons(if="{parent.opts.icons}") // TODO: add support to resources API
-                            svg.feather(each="{icon in parent.opts.icons(asset)}" class="feather-{icon}")
+                        .asset-browser-Icons(if="{asset.type !== 'folder'}")
+                            svg.feather(each="{icon in parent.getIcons(asset)}" class="feather-{icon}")
                                 use(xlink:href="#{icon}")
                         span.date(if="{asset.lastmod && !parent.opts.compact}") {niceTime(asset.lastmod)}
     folder-editor(
@@ -190,6 +196,7 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
         this.usesIcons = resources.areThumbnailsIcons;
         this.iconMap = resources.resourceToIconMap;
         this.getName = resources.getName;
+        this.getIcons = resources.getIcons;
 
         /**
          * A list of opened folders, from the project's root (as its asset collection)
@@ -225,7 +232,7 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
             this.folderStack.pop();
             this.updateFolders();
         };
-        this.moveUpTo = folder => e => {
+        this.moveUpTo = folder => () => {
             const folderIndex = this.folderStack.indexOf(folder);
             if (folderIndex === -1) {
                 throw new Error('[asset-browser] Cannot move outside of the current folder path.');
@@ -263,6 +270,7 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                         }
                     }
                 }
+                return false;
             };
             this.goTo(recursiveFolderWalker(
                 this.currentFolder,
@@ -326,7 +334,8 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
             }
             return 1;
         };
-        this.sortTypewise = (a, b) => a.type < b.type ? -1 : (a.type > b.type ? 1 : 0);
+        // eslint-disable-next-line no-nested-ternary
+        this.sortTypewise = (a, b) => (a.type < b.type ? -1 : (a.type > b.type ? 1 : 0));
         this.updateList = () => {
             if (this.assetTypes[0] !== 'all') {
                 this.entries = this.currentCollection
@@ -334,22 +343,40 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
             } else {
                 this.entries = [...this.currentCollection];
             }
+            if (this.opts.customfilter) {
+                this.entries = this.entries
+                    .filter(entry => entry.type === 'folder' || this.opts.customfilter(entry));
+            }
             if (this.sort === 'name') {
                 if (this.opts.names) {
                     const accessor = this.opts.names;
-                    this.entries.sort((a, b) => this.sortFolderwise(a, b) || accessor(a).localeCompare(accessor(b)) || this.sortTypewise(a, b));
+                    this.entries.sort((a, b) =>
+                        this.sortFolderwise(a, b) ||
+                        accessor(a).localeCompare(accessor(b)) ||
+                        this.sortTypewise(a, b));
                 } else {
-                    this.entries.sort((a, b) => this.sortFolderwise(a, b) || a.name.localeCompare(b.name) || this.sortTypewise(a, b));
+                    this.entries.sort((a, b) =>
+                        this.sortFolderwise(a, b) ||
+                        a.name.localeCompare(b.name) ||
+                        this.sortTypewise(a, b));
                 }
             } else if (this.sort === 'type') {
                 if (this.opts.names) {
                     const accessor = this.opts.names;
-                    this.entries.sort((a, b) => this.sortFolderwise(a, b) || this.sortTypewise(a, b) || accessor(a).localeCompare(accessor(b)));
+                    this.entries.sort((a, b) =>
+                        this.sortFolderwise(a, b) ||
+                        this.sortTypewise(a, b) ||
+                        accessor(a).localeCompare(accessor(b)));
                 } else {
-                    this.entries.sort((a, b) => this.sortFolderwise(a, b) || this.sortTypewise(a, b) || a.name.localeCompare(b.name));
+                    this.entries.sort((a, b) =>
+                        this.sortFolderwise(a, b) ||
+                        this.sortTypewise(a, b) ||
+                        a.name.localeCompare(b.name));
                 }
             } else {
-                this.entries.sort((a, b) => this.sortFolderwise(a, b) || (b.lastmod - a.lastmod));
+                this.entries.sort((a, b) =>
+                    this.sortFolderwise(a, b) ||
+                    (b.lastmod - a.lastmod));
             }
             if (this.sortReverse) {
                 this.entries.reverse();
@@ -410,44 +437,41 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
             if (item.type === 'folder') {
                 // TODO: folder selection on shift and ctrl clicks
                 this.goDown(item);
-            } else {
-                // Shift + click range selection
-                if (e.shiftKey) {
-                    if (this.prevShifSelectItem) {
-                        if (!e.ctrlKey) {
-                            this.selectedItems.clear();
-                        }
-                        const collection = this.searchResults || this.entries;
-                        const a = collection.indexOf(item),
-                              b = collection.indexOf(this.prevShifSelectItem);
-                        if (a === -1 || b === -1) {
-                            this.selectedItems.clear();
-                            return false;
-                        }
-                        const subset = collection.slice(Math.min(a, b), Math.max(a, b) + 1);
-                        for (const selectedItem of subset) {
-                            this.selectedItems.add(selectedItem);
-                        }
-                    } else {
-                        // If nothing was selected before, select the clicked item
-                        this.prevShifSelectItem = item;
-                        this.selectedItems.add(item);
+            } else if (e.shiftKey) { // Shift+click range selection
+                if (this.prevShifSelectItem) {
+                    if (!e.ctrlKey) {
+                        this.selectedItems.clear();
                     }
-                } else if (e.ctrlKey) {
-                    // Singular selection / deselection for Ctrl key
-                    if (this.selectedItems.has(item)) {
-                        this.selectedItems.delete(item);
-                    } else {
-                        this.prevShifSelectItem = item;
-                        this.selectedItems.add(item);
+                    const collection = this.searchResults || this.entries;
+                    const a = collection.indexOf(item),
+                          b = collection.indexOf(this.prevShifSelectItem);
+                    if (a === -1 || b === -1) {
+                        this.selectedItems.clear();
+                        return;
                     }
-                } else if (!this.opts.click) {
-                    throw new Error("[asset-browser] The [click] attribute was not set.");
+                    const subset = collection.slice(Math.min(a, b), Math.max(a, b) + 1);
+                    for (const selectedItem of subset) {
+                        this.selectedItems.add(selectedItem);
+                    }
                 } else {
-                    this.prevShifSelectItem = null;
-                    this.selectedItems.clear();
-                    this.opts.click(item)(e);
+                    // If nothing was selected before, select the clicked item
+                    this.prevShifSelectItem = item;
+                    this.selectedItems.add(item);
                 }
+            } else if (e.ctrlKey) {
+                // Singular selection / deselection for Ctrl key
+                if (this.selectedItems.has(item)) {
+                    this.selectedItems.delete(item);
+                } else {
+                    this.prevShifSelectItem = item;
+                    this.selectedItems.add(item);
+                }
+            } else if (!this.opts.click) { // Escape if there is no click handler
+                throw new Error('[asset-browser] The [click] attribute was not set.');
+            } else {
+                this.prevShifSelectItem = null;
+                this.selectedItems.clear();
+                this.opts.click(item)(e);
             }
         };
         this.deselectAll = () => {
@@ -494,9 +518,9 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
             click: async () => {
                 const reply = await alertify
                     .defaultValue(this.contextMenuAsset.name)
-                    .prompt(this.vocGlob.newName)
+                    .prompt(this.vocGlob.newName);
                 if (reply.inputValue && reply.inputValue.trim() !== '' && reply.buttonClicked !== 'cancel') {
-                    this.contextMenuAsset.name = e.inputValue.trim();
+                    this.contextMenuAsset.name = reply.inputValue.trim();
                     this.update();
                 }
             }
@@ -509,7 +533,8 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                 const reply = await alertify
                     .okBtn(this.vocGlob.delete)
                     .cancelBtn(this.vocGlob.cancel)
-                    .confirm(this.vocGlob.confirmDelete.replace('{0}', this.contextMenuAsset.name))
+                    .confirm(this.vocGlob.confirmDelete
+                        .replace('{0}', this.contextMenuAsset.name));
                 if (reply.buttonClicked === 'ok') {
                     alertify
                         .okBtn(this.vocGlob.ok)
@@ -534,7 +559,10 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                 return;
             }
             this.contextMenuAsset = item;
-            const contextActions = resources.getContextActions(item);
+            const contextActions = resources.getContextActions(item, () => {
+                this.updateList();
+                this.update();
+            });
             if (contextActions.length > 0) {
                 contextActions.push({
                     type: 'separator'
@@ -586,13 +614,14 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
                     const reply = await alertify
                         .okBtn(this.vocGlob.delete)
                         .cancelBtn(this.vocGlob.cancel)
-                        .confirm(this.vocGlob.confirmDelete.replace('{0}', names))
+                        .confirm(this.vocGlob.confirmDelete.replace('{0}', names));
                     if (reply.buttonClicked === 'ok') {
                         alertify
                             .okBtn(this.vocGlob.ok)
                             .cancelBtn(this.vocGlob.cancel);
                         // Do it synchronously to avoid race conditions
                         for (const asset of this.selectedItems) {
+                            // eslint-disable-next-line no-await-in-loop
                             await resources.deleteAsset(asset);
                         }
                         this.updateList();
@@ -693,9 +722,6 @@ asset-browser.flexfix(class="{opts.namespace} {opts.class} {compact: opts.compac
             return this.moveByTransfer(folder, e);
         };
 
-        this.onAsideFolderClick = folderPath => e => {
+        this.onAsideFolderClick = folderPath => () =>
             this.goTo([window.currentProject.assets, ...folderPath]);
-        };
-        this.onAsideFolderDrop = folder => e => {
-            return this.moveByTransfer(folder, e);
-        };
+        this.onAsideFolderDrop = folder => e => this.moveByTransfer(folder, e);

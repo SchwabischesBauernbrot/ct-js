@@ -3,6 +3,7 @@ import {loadAllTypedefs, resetTypedefs} from '../modules/typedefs';
 import {unloadAllEvents, loadAllModulesEvents} from '../../events';
 import {buildAssetMap} from '..';
 import {preparePreviews} from '../preview';
+import {refreshFonts} from '../fonts';
 
 import {getLanguageJSON} from '../../i18n';
 
@@ -141,6 +142,7 @@ const loadProject = async (projectData: IProject): Promise<void> => {
         buildAssetMap(projectData);
         resetPixiTextureCache();
         setPixelart(projectData.settings.rendering.pixelatedrender);
+        refreshFonts();
         const recoveryExists = fs.existsSync(global.projdir + '.ict.recovery');
         await Promise.all([
             loadAllModulesEvents(),
@@ -223,7 +225,7 @@ const openProject = async (proj: string): Promise<void | false | Promise<void>> 
         throw err;
     }
     const proceed = await (new Promise((resolve) => {
-        // eslint-disable-next-line camelcase
+        // eslint-disable-next-line camelcase, @typescript-eslint/no-explicit-any
         (nw.Window as any).getAll((windows: NWJS_Helpers.win[]) => {
             windows.forEach(win => {
                 if ((win.window as Window).path === proj &&
@@ -235,7 +237,7 @@ const openProject = async (proj: string): Promise<void | false | Promise<void>> 
                     throw err;
                 }
             });
-            (window as any).path = proj;
+            window.path = proj;
             resolve(true);
         });
     }));
@@ -296,6 +298,7 @@ const getExamplesDir = function (): string {
     try {
         require('gulp');
         // Most likely, we are in a dev environment
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return path.join((nw.App as any).startPath, 'src/examples');
     } catch (e) {
         const {isMac} = require('./../../platformUtils');
@@ -312,6 +315,7 @@ const getTemplatesDir = function (): string {
     try {
         require('gulp');
         // Most likely, we are in a dev environment
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return path.join((nw.App as any).startPath, 'src/projectTemplates');
     } catch (e) {
         const {isMac} = require('./../../platformUtils');

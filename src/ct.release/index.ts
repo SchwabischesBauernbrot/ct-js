@@ -1,24 +1,25 @@
-import * as pixiMod from 'node_modules/pixi.js';
+import type * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod;
 
 /*! Made with ct.js http://ctjs.rocks/ */
 
 import {updateViewport, toggleFullscreen, getIsFullscreen} from './fittoscreen';
-import {actionsLib as actionsM, inputsLib as inputsM} from './inputs';
+import {actionsLib as actionsM, inputsLib as inputsM, CtAction} from './inputs';
 import backgroundsM, {Background} from './backgrounds';
-import cameraM from './camera';
+import behaviorsM from './behaviors';
+import cameraM, {Camera} from './camera';
 import contentM from './content';
-// import emitters, {EmitterTandem} from './emitters';
+import emittersM from './emitters';
 import resM from 'res';
 import roomsM, {Room} from './rooms';
 import soundsM from 'sounds';
 import stylesM from 'styles';
-import templatesM, {Copy} from './templates';
-import tilemapsM from './tilemaps';
+import templatesM, {BasicCopy} from './templates';
+import tilemapsM, {Tilemap} from './tilemaps';
 import timerM from './timer';
 import uM from './u';
 
-import {ExportedMeta, viewMode} from '../node_requires/exporter/_exporterContracts';
+import type {ExportedMeta, viewMode} from '../node_requires/exporter/_exporterContracts';
 
 // eslint-disable-next-line no-console
 console.log(
@@ -59,7 +60,8 @@ export const settings = {
         return (pixiApp.renderer as pixiMod.Renderer).autoDensity;
     },
     set highDensity(value: boolean) {
-        // Faulty pixi.js typings, you can change autoDensity
+        // Faulty pixi.js typings, you CAN change autoDensity
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (pixiApp.renderer as any).autoDensity = value;
         if (roomsM.current) {
             updateViewport();
@@ -131,7 +133,7 @@ export const settings = {
     }
 };
 
-export const stack: (Copy | Background)[] = [];
+export const stack: (BasicCopy | Background)[] = [];
 
 /** The PIXI.Application that runs ct.js game */
 export let pixiApp: pixiMod.Application;
@@ -166,25 +168,28 @@ export let pixiApp: pixiMod.Application;
 
 let loading: Promise<void>;
 {
-    const killRecursive = (copy: Copy | Background) => {
+    const killRecursive = (copy: (BasicCopy & pixiMod.DisplayObject) | Background) => {
         copy.kill = true;
-        if (copy instanceof Copy && copy.onDestroy) {
+        if (templatesM.isCopy(copy) && (copy as BasicCopy).onDestroy) {
             templatesM.onDestroy.apply(copy);
-            copy.onDestroy.apply(copy);
+            (copy as BasicCopy).onDestroy.apply(copy);
         }
         for (const child of copy.children) {
             if (templatesM.isCopy(child)) {
-                killRecursive(child as Copy); // bruh
+                killRecursive(child as (BasicCopy & pixiMod.DisplayObject)); // bruh
             }
         }
         const stackIndex = stack.indexOf(copy);
         if (stackIndex !== -1) {
             stack.splice(stackIndex, 1);
         }
-        if (copy instanceof Copy && copy.template) {
-            const templatelistIndex = templatesM.list[copy.template].indexOf(copy);
+        if (templatesM.isCopy(copy) && (copy as BasicCopy).template) {
+            const templatelistIndex = templatesM
+                .list[(copy as BasicCopy & pixiMod.DisplayObject).template]
+                .indexOf((copy as BasicCopy & pixiMod.DisplayObject));
             if (templatelistIndex !== -1) {
-                templatesM.list[copy.template].splice(templatelistIndex, 1);
+                templatesM.list[(copy as BasicCopy & pixiMod.DisplayObject).template]
+                    .splice(templatelistIndex, 1);
             }
         }
         deadPool.push(copy);
@@ -203,9 +208,11 @@ let loading: Promise<void>;
         /*!%beforeframe%*/
         roomsM.rootRoomOnStep.apply(roomsM.current);
         for (let i = 0, li = stack.length; i < li; i++) {
-            templatesM.beforeStep.apply(stack[i]);
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            templatesM.isCopy(stack[i]) && templatesM.beforeStep.apply(stack[i]);
             stack[i].onStep.apply(stack[i]);
-            templatesM.afterStep.apply(stack[i]);
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            templatesM.isCopy(stack[i]) && templatesM.afterStep.apply(stack[i]);
         }
         // There may be a number of rooms stacked on top of each other.
         // Loop through them and filter out everything that is not a room.
@@ -221,8 +228,9 @@ let loading: Promise<void>;
         for (const copy of stack) {
             // eslint-disable-next-line no-underscore-dangle
             if (copy.kill && !copy._destroyed) {
-                killRecursive(copy); // This will also allow a parent to eject children
-                                     // to a new container before they are destroyed as well
+                // This will also allow a parent to eject children
+                // to a new container before they are destroyed as well
+                killRecursive(copy as (BasicCopy & pixiMod.DisplayObject));
                 copy.destroy({
                     children: true
                 });
@@ -232,9 +240,11 @@ let loading: Promise<void>;
         manageCamera();
 
         for (let i = 0, li = stack.length; i < li; i++) {
-            templatesM.beforeDraw.apply(stack[i]);
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            templatesM.isCopy(stack[i]) && templatesM.beforeDraw.apply(stack[i]);
             stack[i].onDraw.apply(stack[i]);
-            templatesM.afterDraw.apply(stack[i]);
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            templatesM.isCopy(stack[i]) && templatesM.afterDraw.apply(stack[i]);
             stack[i].xprev = stack[i].x;
             stack[i].yprev = stack[i].y;
         }
@@ -262,13 +272,16 @@ let loading: Promise<void>;
     });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).PIXI = PIXI;
 
 {
     const actions = actionsM;
     const backgrounds = backgroundsM;
+    const behaviors = behaviorsM;
     const camera = cameraM;
     const content = contentM;
+    const emitters = emittersM;
     const inputs = inputsM;
     const res = resM;
     const rooms = roomsM;
@@ -281,14 +294,19 @@ let loading: Promise<void>;
     Object.assign(window, {
         actions,
         backgrounds,
+        behaviors,
+        Camera,
         camera,
+        CtAction,
         content,
+        emitters,
         inputs,
         res,
         rooms,
         sounds,
         styles,
         templates,
+        Tilemap,
         tilemaps,
         timer,
         u,
@@ -299,7 +317,6 @@ let loading: Promise<void>;
     loading.then(() => {
         /*!%start%*/
     });
-    /*!@catmods@*/
 
     /*!@actions@*/
     /*!@styles@*/
@@ -310,8 +327,10 @@ let loading: Promise<void>;
 
     /*!@rooms@*/
     /*!%rooms%*/
-
-    /*!%load%*/
-
-    /*!@userScripts@*/
 }
+
+/*!@catmods@*/
+
+/*!@userScripts@*/
+
+/*!%load%*/

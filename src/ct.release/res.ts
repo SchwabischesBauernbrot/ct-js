@@ -1,7 +1,7 @@
-import {required} from './u';
+import uLib, {required} from './u';
+import type {TextureShape, ExportedTiledTexture, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
 import {pixiSoundPrefix, sounds as soundLib} from './sounds.js';
-import type {TextureShape, ExportedTiledTexture, ExportedSkeleton, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
 import * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
@@ -49,8 +49,7 @@ for (const sound of exportedSounds) {
 const resLib = {
     sounds,
     pixiSounds: {} as Record<string, Sound>,
-    textures,
-    skeletons,
+    textures: {} as Record<string, CtjsAnimation>,
     groups: [/*!@resourceGroups@*/][0] as Record<string, string[]>,
     /**
      * Loads and executes a script by its URL
@@ -102,28 +101,6 @@ const resLib = {
         );
         resLib.textures[name] = ctTexture;
         return ctTexture;
-    },
-    /**
-     * Loads a skeleton animation into the game.
-     * @param {string} skel Path to the .json file that contains
-     * the armature and animations.
-     * @param {string} name The name of the skeleton as it will be used in ct.js game.
-     * @param {boolean} txt Whether to look for a .txt extension instead of .atlas.
-     * @returns The name of the imported animation.
-     */
-    async loadSkeleton(
-        skel: string = required('skel', 'ct.res.loadSkeleton'),
-        name: string = required('name', 'ct.res.loadSkeleton'),
-        txt = true
-    ): Promise<string> {
-        PIXI.Assets.add(skel, skel, {
-            metadata: {
-                spineAtlasSuffix: txt ? '.txt' : '.atlas'
-            }
-        });
-        const asset = await PIXI.Assets.load(skel);
-        resLib.skeletons[name] = asset.spineData;
-        return name;
     },
     /**
      * Loads a Texture Packer compatible .json file with its source image,
@@ -179,9 +156,9 @@ const resLib = {
     },
     /**
      * Loads a sound.
-     * @param {string|boolean} path Path to the sound
-     * @param {string} name The name of the sound as it will be used in ct.js game.
-     * @param {boolean} preload Whether to start loading now or postpone it.
+     * @param path Path to the sound
+     * @param name The name of the sound as it will be used in ct.js game.
+     * @param preload Whether to start loading now or postpone it.
      * Postponed sounds will load when a game tries to play them, or when you manually
      * trigger the download with `sounds.load(name)`.
      * @returns A promise with the name of the imported sound.
@@ -225,12 +202,11 @@ const resLib = {
         const atlases: string[] = [/*!@atlases@*/][0];
         const tiledImages: ExportedTiledTexture[] = [/*!@tiledImages@*/][0];
         const bitmapFonts: string[] = [/*!@bitmapFonts@*/][0];
-        const skeletons: ExportedSkeleton[] = [/*!@skeletons@*/][0];
         /* eslint-enable prefer-destructuring */
 
         const totalAssets = atlases.length;
         let assetsLoaded = 0;
-        const loadingPromises: Promise<any>[] = [];
+        const loadingPromises: Promise<unknown>[] = [];
 
         loadingPromises.push(...atlases.map(atlas =>
             resLib.loadAtlas(atlas)
@@ -252,9 +228,6 @@ const resLib = {
         }
         for (const font in bitmapFonts) {
             loadingPromises.push(resLib.loadBitmapFont(bitmapFonts[font]));
-        }
-        for (const skel of skeletons) {
-            loadingPromises.push(resLib.loadSkeleton(skel.dataPath, skel.name));
         }
         for (const sound of exportedSounds) {
             for (const variant of sound.variants) {
@@ -320,31 +293,6 @@ const resLib = {
         }
         return resLib.textures[name].shape;
     }
-    /**
-     * Creates a skeletal animated sprite, ready to be added to your copies.
-     * @param {string} name The name of the skeleton asset.
-     * @param {string} [skin] The name of the skin; optional.
-     * @returns The created skeleton
-     */
-    /*makeSkeleton(name: string, skin?: string): any {
-        const asset = resLib.skeletons[name];
-        const skeleton: Spine = new Spine(asset);
-        if (skin) {
-            skeleton.skeleton.setSkinByName(skin);
-        }
-        // TODO:
-        /* skel.on(dragonBones.EventObject.SOUND_EVENT, function skeletonSound(event) {
-            if (sounds.exists(event.name)) {
-                sounds.play(event.name);
-            } else {
-                // eslint-disable-next-line no-console
-                console.warn(`Skeleton ${skel.ctName} tries to play
-                a non-existing sound ${event.name}
-                at animation ${skel.animation.lastAnimationName}`);
-            }
-        }); //
-        return skeleton;
-    }*/
 };
 
 /*!@fonts@*/

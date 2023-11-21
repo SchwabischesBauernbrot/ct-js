@@ -6,6 +6,9 @@
     @attribute inputtype (string)
         The main input type used in the array editor.
         One of the types supported by extensions-editor, except for headers, arrays, .
+    @attribute [setlength] (number)
+        If set, sets the size of the input array to this value, and prevents the creation
+        of new values or deletion of existing ones.
     @attribute [onchanged] (riot Function)
         A callback to call when the entity has changed.
     @attribute [wide] (atomic)
@@ -108,15 +111,12 @@ array-editor
             .nogrow.noshrink
                 // Use opacity to keep nice layout
                 .anActionableIcon(onclick="{moveUp(index)}" title="{voc.moveUp}")
-                    svg.feather
-                        use(xlink:href="#arrow-up")
+                    span ⬆️
                 .anActionableIcon(onclick="{moveDown(index)}" title="{voc.moveDown}")
-                    svg.feather
-                        use(xlink:href="#arrow-down")
-                .anActionableIcon(onclick="{deleteRow(index)}" title="{voc.deleteRow}")
-                    svg.feather.red
-                        use(xlink:href="#delete")
-    button(onclick="{addRow}" class="{inline: opts.compact}")
+                    span ⬇️
+                .anActionableIcon(onclick="{deleteRow(index)}" if="{!parent.opts.setlength}" title="{voc.deleteRow}")
+                    span ❌
+    button(onclick="{addRow}" class="{inline: opts.compact}" if="{!opts.setlength}")
         svg.feather
             use(xlink:href="#plus")
         span {voc.addRow}
@@ -130,6 +130,10 @@ array-editor
         };
         this.namespace = 'extensionsEditor';
         this.mixin(require('./data/node_requires/riotMixins/voc').default);
+
+        if (this.opts.setlength) {
+            this.opts.entity.length = Number(this.opts.setlength);
+        }
 
         this.on('update', () => {
             if (!this.opts.entity) {
