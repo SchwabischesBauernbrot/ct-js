@@ -1,4 +1,3 @@
-
 sound-editor.aView.pad.flexfix(onclick="{tryClose}")
     .flexfix-body.sound-editor-aWrapper
         .flexrow
@@ -145,7 +144,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         this.swatches = require('./data/node_requires/themes').getSwatches();
 
         this.reimportVariant = variant => e => {
-            // TODO
+            // TODO:
             // remove the old variant from pixi.sound first
         };
 
