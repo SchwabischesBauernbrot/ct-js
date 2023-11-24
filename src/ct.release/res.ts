@@ -1,7 +1,7 @@
-import uLib, {required} from './u';
+import {required} from './u';
 import type {TextureShape, ExportedTiledTexture, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
-import {pixiSoundPrefix, sounds as soundLib} from './sounds.js';
+import {pixiSoundPrefix} from './sounds.js';
 
 import * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
@@ -37,17 +37,13 @@ const loadingScreen = document.querySelector('.ct-aLoadingScreen') as HTMLDivEle
 export const textures: Record<string, CtjsAnimation> = {};
 export const skeletons: Record<string, any> = {};
 const exportedSounds = [/*!@sounds@*/][0] as ExportedSound[];
-export const sounds: Record<string, ExportedSound> = {};
-for (const sound of exportedSounds) {
-    sounds[sound.name] = sound;
-}
 
 /**
  * An object that manages and stores textures and other assets,
  * also exposing API for dynamic asset loading.
  */
 const resLib = {
-    sounds,
+    sounds: {} as Record<string, ExportedSound>,
     pixiSounds: {} as Record<string, Sound>,
     textures: {} as Record<string, CtjsAnimation>,
     groups: [/*!@resourceGroups@*/][0] as Record<string, string[]>,
@@ -294,6 +290,11 @@ const resLib = {
         return resLib.textures[name].shape;
     }
 };
+
+for (const sound of exportedSounds) {
+    resLib.sounds[sound.name] = sound;
+}
+
 
 /*!@fonts@*/
 

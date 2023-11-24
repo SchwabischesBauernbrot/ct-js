@@ -4,6 +4,7 @@
 
 /* eslint no-use-before-define: 0 */
 import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound, SoundLibrary} from 'node_modules/@pixi/sound';
+import resLib from 'res';
 import type {webaudio} from 'node_modules/@pixi/sound/lib';
 import type {ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
@@ -31,8 +32,6 @@ type fxConstructorOptions = {
     [T in fxName]: ConstructorParameters<typeof pixiSoundFilters[T]>
 }
 
-export const sounds: Record<string, ExportedSound> = {};
-
 export const pixiSoundPrefix = 'pixiSound-';
 const randomRange = (min: number, max: number): number => Math.random() * (max - min) + min;
 
@@ -44,9 +43,11 @@ const randomRange = (min: number, max: number): number => Math.random() * (max -
  */
 const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebAudioInstance => {
     if (sound instanceof Sound) {
+        console.log("playVariant(sound) : sound is a Sound instance" )
         return sound.play() as webaudio.WebAudioInstance;
     }
     const variant = sound.variants[Math.floor(Math.random() * sound.variants.length)];
+    console.log("pixiSound", pixiSound); // WIP: pixiSound empty here but not in console
     const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`).play() as
         webaudio.WebAudioInstance;
     if (sound.volume?.enabled) {
@@ -118,8 +119,11 @@ export const soundsLib = {
         if (!soundsLib.exists(name)) {
             throw new Error(`[sounds.play] Sound "${name}" was not found. Is it a typo?`);
         } else {
-            if (name in sounds) {
-                const exported = sounds[`${pixiSoundPrefix}${name}`];
+            if (name in resLib.sounds) {
+                console.log("resLib.sounds", resLib.sounds)
+                // const exported = resLib.sounds[`${pixiSoundPrefix}${name}`];
+                const exported = resLib.sounds[name];
+                // console.log("play(name) exported", exported)
                 return playVariant(exported, options);
             }
             return pixiSound[`${pixiSoundPrefix}${name}`].play(options);
@@ -191,7 +195,7 @@ export const soundsLib = {
      * @returns {boolean}
      */
     exists(name: string): boolean {
-        return (name in sounds) || pixiSound.exists(`${pixiSoundPrefix}${name}`);
+        return (name in resLib.sounds) || pixiSound.exists(`${pixiSoundPrefix}${name}`);
     },
 
     /**
@@ -257,7 +261,7 @@ export const soundsLib = {
         };
         if (name) {
             if (typeof name === 'string') {
-                start.value = sounds[name].volume;
+                start.value = resLib.sounds[name].volume;
             } else {
                 start.value = (name as IMediaInstance).volume;
             }
@@ -294,11 +298,10 @@ export const soundsLib = {
     ): void {
         const fx = filter as FilterPreserved;
         fx.preserved = fx.toString().slice(8, -1);
-        console.log(fx.preserved);
         if (sound === false) {
             PIXI.sound.filtersAll = [...(PIXI.sound.filtersAll || []), fx];
         } else if (typeof sound === 'string') {
-            const exported = sounds[sound];
+            const exported = resLib.sounds[sound];
             for (const variant of exported.variants) {
                 const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`);
                 pixiSoundInst.filters = [...(pixiSoundInst.filters || []), fx];
@@ -377,7 +380,7 @@ export const soundsLib = {
         }
         if (!filters && name) {
             // clear all variants' filters
-            const exported = sounds[name as string];
+            const exported = resLib.sounds[name as string];
             for (const variant of exported.variants) {
                 const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`);
                 soundsLib.removeFilter(pixiSoundInst, filter);
@@ -411,8 +414,8 @@ export const soundsLib = {
     speed(name: string | IMediaInstance, value?: number): number { // TODO: make an overload
         if (value) {
             if (typeof name === 'string') {
-                if (name in sounds) {
-                    for (const variant of sounds[name].variants) {
+                if (name in resLib.sounds) {
+                    for (const variant of resLib.sounds[name].variants) {
                         PIXI.sound.speed(`${pixiSoundPrefix}${variant.uid}`, value);
                         return value;
                     }
@@ -424,8 +427,8 @@ export const soundsLib = {
                 return value;
             }
         }
-        if ((name as string) in sounds) {
-            return PIXI.sound.speed(sounds[name as string].variants[0].uid);
+        if ((name as string) in resLib.sounds) {
+            return PIXI.sound.speed(resLib.sounds[name as string].variants[0].uid);
         }
         const pixiName = `${pixiSoundPrefix}${name}`;
         return typeof name === 'string' ? PIXI.sound.speed(pixiName) : (name as IMediaInstance).speed;
