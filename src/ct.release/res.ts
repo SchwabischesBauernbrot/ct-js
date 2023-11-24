@@ -1,7 +1,7 @@
 import {required} from './u';
 import type {TextureShape, ExportedTiledTexture, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
-import {pixiSoundPrefix} from './sounds.js';
+import {pixiSoundPrefix, exportedSounds} from './sounds.js';
 
 import * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
@@ -36,7 +36,6 @@ const loadingScreen = document.querySelector('.ct-aLoadingScreen') as HTMLDivEle
 
 export const textures: Record<string, CtjsAnimation> = {};
 export const skeletons: Record<string, any> = {};
-const exportedSounds = [/*!@sounds@*/][0] as ExportedSound[];
 
 /**
  * An object that manages and stores textures and other assets,
