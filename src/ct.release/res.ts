@@ -1,7 +1,7 @@
 import {required} from './u';
 import type {TextureShape, ExportedTiledTexture, ExportedSound} from '../node_requires/exporter/_exporterContracts';
 import {sound as pixiSound, Sound} from 'node_modules/@pixi/sound';
-import {pixiSoundPrefix, exportedSounds} from './sounds.js';
+import {pixiSoundPrefix, exportedSounds, soundMap, pixiSoundInstances} from './sounds.js';
 
 import * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
@@ -42,8 +42,8 @@ export const skeletons: Record<string, any> = {};
  * also exposing API for dynamic asset loading.
  */
 const resLib = {
-    sounds: {} as Record<string, ExportedSound>,
-    pixiSounds: {} as Record<string, Sound>,
+    sounds: soundMap,
+    pixiSounds: pixiSoundInstances,
     textures: {} as Record<string, CtjsAnimation>,
     groups: [/*!@resourceGroups@*/][0] as Record<string, string[]>,
     /**
@@ -226,7 +226,7 @@ const resLib = {
         }
         for (const sound of exportedSounds) {
             for (const variant of sound.variants) {
-                loadingPromises.push(resLib.loadSound(variant.source, variant.uid));
+                loadingPromises.push(resLib.loadSound(variant.source, `${pixiSoundPrefix}${variant.uid}`));
             }
         }
 
@@ -289,10 +289,6 @@ const resLib = {
         return resLib.textures[name].shape;
     }
 };
-
-for (const sound of exportedSounds) {
-    resLib.sounds[sound.name] = sound;
-}
 
 
 /*!@fonts@*/

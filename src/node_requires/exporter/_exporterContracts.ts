@@ -190,7 +190,8 @@ export type ExportedStyle = {
     dropShadowDistance?: number;
 }
 
-export type ExportedSound = Omit<ISound, 'uid' | 'group' | 'lastmod' | 'type'>;
+export type ExportedSound = Omit<ISound, 'uid' | 'group' | 'lastmod' | 'type'> &
+    Partial<Pick<ISound, 'distortion' | 'eq' | 'pitch' | 'reverb' | 'volume'>>;
 
 export type ExportedBehaviorDynamic = {
     thisOnStep?: () => void,

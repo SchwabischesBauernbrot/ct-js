@@ -437,12 +437,11 @@ const exportCtProject = async (
         for (const variant of sound.variants) {
             const source = getVariantPath(sound, variant);
             const ext = path.extname(source);
-            // soundCopyPromises.push(fs.copy(source, path.join(writeDir, '/snd/', `${sound.name}_${variant.uid}${ext}`)));
             soundCopyPromises.push(fs.copy(source, path.join(writeDir, '/snd/', `${variant.uid}${ext}`)));
         }
     }
     await Promise.all(soundCopyPromises);
-    // Plus it would be better to start copying files earlier,
+    // TODO: it would be better to start copying files earlier,
     // You can place `await Promise.all(soundCopyPromises);` much later in code
     // Meaning that you can start copying sounds before rendering the index.html or such
     // Aaaaaand it is better to separate the copying code into a separate file
