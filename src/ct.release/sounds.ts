@@ -22,10 +22,15 @@ declare var PIXI: typeof pixiMod & {
 
 // ⚠️ DO NOT put into res.ts, see the start of the file.
 export const exportedSounds = [/*!@sounds@*/][0] as ExportedSound[] ?? [];
+/** All the sound data objects exported from ct.IDE, mapped by their asset name. */
 export const soundMap = {} as Record<string, ExportedSound>;
 for (const exportedSound of exportedSounds) {
     soundMap[exportedSound.name] = exportedSound;
 }
+/**
+ * A map of Sound instances of both exported sounds' variants
+ * and user-loaded ones with res.loadSound.
+ */
 export const pixiSoundInstances = {} as Record<string, Sound>;
 
 type FilterPreserved = Filter & {
@@ -47,6 +52,7 @@ type fxConstructorOptions = {
 
 /** A prefix for PIXI.Loader to distinguish between sounds and other asset types like textures. */
 export const pixiSoundPrefix = 'pixiSound-';
+
 const randomRange = (min: number, max: number): number => Math.random() * (max - min) + min;
 
 /**
