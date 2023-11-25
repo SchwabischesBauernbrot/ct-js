@@ -81,10 +81,14 @@ const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebA
     if (sound.volume?.enabled) {
         (pixiSoundInst as IMediaInstance).volume =
             randomRange(sound.volume.min, sound.volume.max) * (options?.volume || 1);
+    } else if (options.volume !== void 0) {
+        (pixiSoundInst as IMediaInstance).volume = options.volume;
     }
     if (sound.pitch?.enabled) {
         (pixiSoundInst as IMediaInstance).speed =
             randomRange(sound.pitch.min, sound.pitch.max) * (options?.speed || 1);
+    } else if (options.speed !== void 0) {
+        (pixiSoundInst as IMediaInstance).speed = options.speed;
     }
     if (sound.distortion?.enabled) {
         soundsLib.addDistortion(
