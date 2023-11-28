@@ -59,16 +59,17 @@ const randomRange = (min: number, max: number): number => Math.random() * (max -
  * Applies a method onto a sound — regardless whether it is a sound exported from ct.IDE
  * (with variants) or imported by a user though `res.loadSound`.
  */
-const withSound = (name: string, fn: (sound: Sound) => unknown) => {
+const withSound = <T>(name: string, fn: (sound: Sound) => T): T => {
     if (name in pixiSoundInstances) {
-        fn(pixiSoundInstances[name]);
+        return fn(pixiSoundInstances[name]);
     } else if (name in soundMap) {
         for (const variant of soundMap[name].variants) {
-            fn(pixiSoundInstances[`${pixiSoundPrefix}${variant.uid}`]);
+            return fn(pixiSoundInstances[`${pixiSoundPrefix}${variant.uid}`]);
         }
     } else {
         throw new Error(`[sounds] Sound "${name}" was not found. Is it a typo?`);
     }
+    return null;
 };
 
 /**
@@ -269,7 +270,6 @@ export const soundsLib = {
      * @returns {number} The current volume of the sound.
      */
     volume(name: string | IMediaInstance, volume?: number): number {
-        const pixiName = `${pixiSoundPrefix}${name}`;
         if (volume !== void 0) {
             if (typeof name === 'string') {
                 withSound(name, sound => {
@@ -279,7 +279,10 @@ export const soundsLib = {
                 (name as IMediaInstance).volume = volume;
             }
         }
-        return typeof name === 'string' ? PIXI.sound.volume(pixiName) : (name as IMediaInstance).volume;
+        if (typeof name === 'string') {
+            return withSound(name, sound => sound.volume);
+        }
+        return (name as IMediaInstance).volume;
     },
 
     /**
