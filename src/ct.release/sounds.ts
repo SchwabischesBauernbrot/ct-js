@@ -85,6 +85,8 @@ const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebA
     const variant = sound.variants[Math.floor(Math.random() * sound.variants.length)];
     const pixiSoundInst = pixiSoundInstances[`${pixiSoundPrefix}${variant.uid}`].play() as
         webaudio.WebAudioInstance;
+    // Breaking bug when testing a game
+    /*
     if (sound.volume?.enabled) {
         (pixiSoundInst as IMediaInstance).volume =
             randomRange(sound.volume.min, sound.volume.max) * (options?.volume || 1);
@@ -116,6 +118,7 @@ const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebA
             ...sound.eq.bands.map(band => randomRange(band.min, band.max))
         );
     }
+    */
     return pixiSoundInst;
 };
 
@@ -307,11 +310,7 @@ export const soundsLib = {
             value: null
         };
         if (name) {
-            if (typeof name === 'string') {
-                start.value = soundMap[name].volume;
-            } else {
-                start.value = (name as IMediaInstance).volume;
-            }
+            start.value = soundsLib.volume(name as string | IMediaInstance);
         } else {
             start.value = PIXI.sound.context.volume;
         }
