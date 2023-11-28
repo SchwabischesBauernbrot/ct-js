@@ -46,9 +46,6 @@ const fxNamesToClasses = {} as {
 for (const fxName of fxNames) {
     fxNamesToClasses[fxName] = pixiSoundFilters[fxName];
 }
-type fxConstructorOptions = {
-    [T in fxName]: ConstructorParameters<typeof pixiSoundFilters[T]>
-}
 
 /** A prefix for PIXI.Loader to distinguish between sounds and other asset types like textures. */
 export const pixiSoundPrefix = 'pixiSound-';
@@ -79,26 +76,33 @@ const withSound = <T>(name: string, fn: (sound: Sound) => T): T => {
  * @param {string} name Sound's name
  */
 const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebAudioInstance => {
+    // Keep only options that are not setable in editor
+    // const {filters, speed, volume, ...notEditorOptions} = options;
+    const notEditorOptions = Object.keys(options).reduce((o, k) => {
+        if (k !== 'filters' && k !== 'speed' && k !== 'volume') {
+            o[k] = options[k];
+        }
+        return o;
+    }, {});
     if (sound instanceof Sound) {
-        return sound.play() as webaudio.WebAudioInstance;
+        return sound.play(notEditorOptions) as webaudio.WebAudioInstance;
     }
     const variant = sound.variants[Math.floor(Math.random() * sound.variants.length)];
-    const pixiSoundInst = pixiSoundInstances[`${pixiSoundPrefix}${variant.uid}`].play() as
+    const pixiSoundInst = pixiSoundInstances[`${pixiSoundPrefix}${variant.uid}`].play(notEditorOptions) as
         webaudio.WebAudioInstance;
-    // Breaking bug when testing a game
-    /*
     if (sound.volume?.enabled) {
         (pixiSoundInst as IMediaInstance).volume =
             randomRange(sound.volume.min, sound.volume.max) * (options?.volume || 1);
-    } else if (options.volume !== void 0) {
+    } else if (options?.volume !== void 0) {
         (pixiSoundInst as IMediaInstance).volume = options.volume;
     }
     if (sound.pitch?.enabled) {
         (pixiSoundInst as IMediaInstance).speed =
             randomRange(sound.pitch.min, sound.pitch.max) * (options?.speed || 1);
-    } else if (options.speed !== void 0) {
+    } else if (options?.speed !== void 0) {
         (pixiSoundInst as IMediaInstance).speed = options.speed;
     }
+    // TODO: filters can also be in options...
     if (sound.distortion?.enabled) {
         soundsLib.addDistortion(
             pixiSoundInst,
@@ -109,16 +113,16 @@ const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebA
         soundsLib.addReverb(
             pixiSoundInst,
             randomRange(sound.reverb.secondsMin, sound.reverb.secondsMax),
-            randomRange(sound.reverb.decayMin, sound.reverb.decayMax)
+            randomRange(sound.reverb.decayMin, sound.reverb.decayMax),
+            sound.reverb.reverse
         );
     }
     if (sound.eq?.enabled) {
         soundsLib.addEqualizer(
             pixiSoundInst,
-            ...sound.eq.bands.map(band => randomRange(band.min, band.max))
+            ...sound.eq.bands.map(band => randomRange(band.min, band.max))// TODO: idk how to fix that type thingie
         );
     }
-    */
     return pixiSoundInst;
 };
 
