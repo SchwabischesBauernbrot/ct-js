@@ -163,9 +163,8 @@ const resLib = {
         name: string = required('name', 'ct.res.loadSound'),
         preload = true
     ): Promise<string> {
-        const key = `${pixiSoundPrefix}${name}`;
         return new Promise<string>((resolve, reject) => {
-            const asset = PIXI.sound.add(key, {
+            const asset = PIXI.sound.add(name, {
                 url: path,
                 preload,
                 loaded: preload ?
