@@ -356,51 +356,124 @@ export const soundsLib = {
             throw new Error(`[sounds.addFilter] Invalid sound: ${sound}`);
         }
     },
+
+    /**
+     * Adds a distortion filter.
+     *
+     * @param sound If set to false, applies the filter globally.
+     * If set to a string, applies the filter to the specified sound asset.
+     * If set to a media instance or PIXI.Sound instance, applies the filter to it.
+     * @param {number} amount The amount of distortion to set from 0 to 1. Default is 0.
+     */
     addDistortion(
         sound: false | string | Sound | webaudio.WebAudioInstance,
-        ...args: fxConstructorOptions['DistortionFilter']
+        amount: number
     ): pixiSoundFilters.DistortionFilter {
-        const fx = new PIXI.sound.filters.DistortionFilter(...args);
+        const fx = new PIXI.sound.filters.DistortionFilter(amount);
         soundsLib.addFilter(sound, fx);
         return fx;
     },
+
+    /**
+     * Adds an equalizer filter.
+     *
+     * @param sound If set to false, applies the filter globally.
+     * If set to a string, applies the filter to the specified sound asset.
+     * If set to a media instance or PIXI.Sound instance, applies the filter to it.
+     * @param {number} f32 Default gain for 32 Hz. Default is 0.
+     * @param {number} f64 Default gain for 64 Hz. Default is 0.
+     * @param {number} f125 Default gain for 125 Hz. Default is 0.
+     * @param {number} f250 Default gain for 250 Hz. Default is 0.
+     * @param {number} f500 Default gain for 500 Hz. Default is 0.
+     * @param {number} f1k Default gain for 1000 Hz. Default is 0.
+     * @param {number} f2k Default gain for 2000 Hz. Default is 0.
+     * @param {number} f4k Default gain for 4000 Hz. Default is 0.
+     * @param {number} f8k Default gain for 8000 Hz. Default is 0.
+     * @param {number} f16k Default gain for 16000 Hz. Default is 0.
+     */
+
+    // eslint-disable-next-line max-params
     addEqualizer(
         sound: false | string | Sound | webaudio.WebAudioInstance,
-        ...args: fxConstructorOptions['EqualizerFilter']
+        f32: number,
+        f64: number,
+        f125: number,
+        f250: number,
+        f500: number,
+        f1k: number,
+        f2k: number,
+        f4k: number,
+        f8k: number,
+        f16k: number
     ): pixiSoundFilters.EqualizerFilter {
-        const fx = new PIXI.sound.filters.EqualizerFilter(...args);
+        // eslint-disable-next-line max-len
+        const fx = new PIXI.sound.filters.EqualizerFilter(f32, f64, f125, f250, f500, f1k, f2k, f4k, f8k, f16k);
         soundsLib.addFilter(sound, fx);
         return fx;
     },
-    addMonoFilter(
-        sound: false | string | Sound | webaudio.WebAudioInstance,
-        ...args: fxConstructorOptions['MonoFilter']
-    ): pixiSoundFilters.MonoFilter {
-        const fx = new PIXI.sound.filters.MonoFilter(...args);
+
+    /**
+     * Combine all channels into mono channel.
+     *
+     * @param sound If set to false, applies the filter globally.
+     * If set to a string, applies the filter to the specified sound asset.
+     * If set to a media instance or PIXI.Sound instance, applies the filter to it.
+     */
+    addMonoFilter(sound: false | string | Sound | webaudio.WebAudioInstance):
+        pixiSoundFilters.MonoFilter {
+        const fx = new PIXI.sound.filters.MonoFilter();
         soundsLib.addFilter(sound, fx);
         return fx;
     },
+
+    /**
+     * Adds a reverb filter.
+     *
+     * @param sound If set to false, applies the filter globally.
+     * If set to a string, applies the filter to the specified sound asset.
+     * If set to a media instance or PIXI.Sound instance, applies the filter to it.
+     * @param {number} seconds Seconds for reverb. Default is 3.
+     * @param {number} decay The decay length. Default is 2.
+     * @param {boolean} reverse Reverse reverb. Default is false.
+     */
     addReverb(
         sound: false | string | Sound | webaudio.WebAudioInstance,
-        ...args: fxConstructorOptions['ReverbFilter']
+        seconds: number,
+        decay: number,
+        reverse: boolean
     ): pixiSoundFilters.ReverbFilter {
-        const fx = new PIXI.sound.filters.ReverbFilter(...args);
+        const fx = new PIXI.sound.filters.ReverbFilter(seconds, decay, reverse);
         soundsLib.addFilter(sound, fx);
         return fx;
     },
+
+    /**
+     * Adds a filter for stereo panning.
+     *
+     * @param sound If set to false, applies the filter globally.
+     * If set to a string, applies the filter to the specified sound asset.
+     * If set to a media instance or PIXI.Sound instance, applies the filter to it.
+     * @param {number} pan The amount of panning: -1 is left, 1 is right. Default is 0 (centered).
+     */
     addStereoFilter(
         sound: false | string | Sound | webaudio.WebAudioInstance,
-        ...args: fxConstructorOptions['StereoFilter']
+        pan: number
     ): pixiSoundFilters.StereoFilter {
-        const fx = new PIXI.sound.filters.StereoFilter(...args);
+        const fx = new PIXI.sound.filters.StereoFilter(pan);
         soundsLib.addFilter(sound, fx);
         return fx;
     },
-    addTelephone(
-        sound: false | string | Sound | webaudio.WebAudioInstance,
-        ...args: fxConstructorOptions['TelephoneFilter']
-    ): pixiSoundFilters.TelephoneFilter {
-        const fx = new PIXI.sound.filters.TelephoneFilter(...args);
+
+    /**
+     * Adds a telephone-sound filter.
+     *
+     * @param sound If set to false, applies the filter globally.
+     * If set to a string, applies the filter to the specified sound asset.
+     * If set to a media instance or PIXI.Sound instance, applies the filter to it.
+     */
+    addTelephone(sound: false | string | Sound | webaudio.WebAudioInstance):
+        pixiSoundFilters.TelephoneFilter {
+        const fx = new PIXI.sound.filters.TelephoneFilter();
         soundsLib.addFilter(sound, fx);
         return fx;
     },
