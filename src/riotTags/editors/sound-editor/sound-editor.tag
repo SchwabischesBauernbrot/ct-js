@@ -27,6 +27,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                         button.square.nogrow(onclick="{deleteVariant(variant)}" title="{vocGlob.delete}")
                             svg.feather
                                 use(xlink:href="#x")
+                    .aSpacer
                     .flexrow
                         button(onclick="{openRecorder}")
                             svg.feather
