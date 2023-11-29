@@ -1,11 +1,17 @@
 import {Sprite, Texture, Application} from 'node_modules/pixi.js';
 import {utils as pixiSoundUtils, Sound as pixiSoundSound} from 'node_modules/@pixi/sound';
-import {getVariantPath} from '../sounds';
-import {outputCanvasToFile} from '../../utils/imageUtils';
 import {join} from 'path';
+
+import {outputCanvasToFile} from '../../utils/imageUtils';
+
+import {TexturePreviewer} from './texture';
+import {getVariantPath} from '../sounds';
 
 export class SoundPreviewer {
     static get(sound: ISound, fileSys?: boolean | 'last', variantUid?: string, long?: boolean): string {
+        if (sound.variants.length === 0) {
+            return TexturePreviewer.get(-1, fileSys);
+        }
         if (!variantUid) {
             variantUid = sound.variants[0].uid;
         }
