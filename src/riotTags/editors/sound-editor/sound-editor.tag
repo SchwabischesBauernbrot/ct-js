@@ -13,8 +13,9 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         .flexrow.sound-editor-Columns
             .fifty.npl.flexfix
                 .flexfix-header
-                    h3.nmt Files
+                    h2.nmt Files
                 .flexfix-body
+                    .aSpacer
                     .flexrow(each="{sound in asset.variants}")
                         .aCard-aThumbnail
                             img(src="{smallWaveforms[sound.uid]}")
@@ -34,11 +35,14 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             span  {voc.addVariant}
                         input(type="file" ref="inputsound" accept=".mp3,.ogg,.wav" onchange="{importVariant}")
                 .flexfix-footer
+                    h2.nmt {vocGlob.settings}
+                    .aSpacer
                     label.checkbox
                         input(type="checkbox")
                         b {voc.preload}
             .fifty.npr
-                h3.nmt {voc.effects}
+                h2.nmt {voc.effects}
+                .aSpacer
                 virtual(each="{prop in ['volume', 'pitch', 'distortion']}")
                     .flexrow.sound-editor-aFilter
                         label.checkbox
