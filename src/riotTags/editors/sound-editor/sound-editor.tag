@@ -115,7 +115,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                                     slider-color="{swatches.borderBright}"
                                     circle-size="24px"
                                 )
-    .flexfix-footer
+    .flexfix-footer.sound-editor-aWrapper
         p.nmb
             button.wide(onclick="{saveAndClose}" title="Shift+Control+S" data-hotkey="Control+S")
                 svg.feather
