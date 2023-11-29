@@ -63,6 +63,7 @@ const cssHelpers = Object.freeze({
           outline: none !important;
           background: transparent;
           background-image: linear-gradient(to bottom, transparent 0%, transparent 35%, ${cssHelpers.sliderBackgroundColor} 35%, ${cssHelpers.sliderBackgroundColor} 65%, transparent 65%, transparent 100%);
+          margin: 0;
         }
           
         .min-max-slider > .range-input::-webkit-slider-thumb {
