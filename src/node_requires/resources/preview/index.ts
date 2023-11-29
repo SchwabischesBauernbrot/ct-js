@@ -2,6 +2,7 @@ import {FontPreviewer} from './font';
 import {RoomPreviewer} from './room';
 import {StylePreviewer} from './style';
 import {TexturePreviewer} from './texture';
+import {SoundPreviewer} from './sound';
 import {getByTypes} from '..';
 import {getStartingRoom} from '../rooms';
 
@@ -46,6 +47,7 @@ export const preparePreviews = async function (
                 ...FontPreviewer.retainPreview(assets.font),
                 ...RoomPreviewer.retainPreview(assets.room),
                 ...StylePreviewer.retainPreview(assets.style),
+                ...SoundPreviewer.retainPreview(assets.sound),
                 ...TexturePreviewer.retainPreview(assets.texture)
             ];
 

@@ -28,7 +28,14 @@ export class SoundPreviewer {
     }
 
     static retainPreview(sounds: ISound[]): string[] {
-        return sounds.map((sound) => SoundPreviewer.get(sound, 'last'));
+        const filenames: string[] = [];
+        for (const sound of sounds) {
+            for (const variant of sound.variants) {
+                filenames.push(SoundPreviewer.get(sound, 'last', variant.uid));
+                filenames.push(SoundPreviewer.get(sound, 'last', variant.uid, true));
+            }
+        }
+        return filenames;
     }
 
     static create(soundAsset: ISound, variant?: ISound['variants'][0], long?: boolean): Promise<HTMLCanvasElement> {
