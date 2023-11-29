@@ -120,7 +120,9 @@ const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebA
     if (sound.eq?.enabled) {
         soundsLib.addEqualizer(
             pixiSoundInst,
-            ...sound.eq.bands.map(band => randomRange(band.min, band.max))// TODO: idk how to fix that type thingie
+            ...(sound.eq.bands.map(band => randomRange(band.min, band.max)) as
+                [number, number, number, number, number, number, number, number, number, number])
+            // 🍝
         );
     }
     return pixiSoundInst;
