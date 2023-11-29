@@ -53,7 +53,7 @@ export class SoundPreviewer {
                     const base = pixiSoundUtils.render(soundInstance, {
                         height: long ? 100 : 128,
                         width: long ? 960 : 128,
-                        fill: 'red'
+                        fill: '#ff0000'
                     });
                     const waveform = new Sprite(new Texture(base));
                     const app = new Application();

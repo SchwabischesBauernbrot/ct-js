@@ -4,7 +4,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             // TODO: make it dynamic
             // need to somehow get the played variant back
             // from the sound lib
-            img(src="{largeWaveforms[asset.variants[0].uid]}" if="{asset.variants.length}")
+            img.soundthumbnail(src="{getPreview(asset.variants[0], true)}" if="{asset.variants.length}")
             .aSpacer(if="{!asset.variants.length}")
             .aSpacer.nogrow
             button.round.square.nogrow.alignmiddle(onclick="{test}")
@@ -13,27 +13,37 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         .flexrow.sound-editor-Columns
             .fifty.npl.flexfix
                 .flexfix-header
-                    h2.nmt Files
+                    h2.nmt {voc.variants}
                 .flexfix-body
                     .aSpacer
-                    .flexrow(each="{sound in asset.variants}")
-                        .aCard-aThumbnail
-                            img(src="{smallWaveforms[sound.uid]}")
-                        button.square.nogrow.large(onclick="{togglePlay(sound)}" title="{vocGlob.play}")
+                    .flexrow.wide(each="{variant in asset.variants}")
+                        img.aVariantThumbnail.soundthumbnail(src="{getPreview(variant, true)}")
+                        button.square.nogrow.large(onclick="{togglePlay(variant)}" title="{vocGlob.play}")
                             svg.feather
-                                use(xlink:href="#{playing(sound.uid) ? 'pause' : 'play'}")
+                                use(xlink:href="#{playing(variant.uid) ? 'pause' : 'play'}")
                         button.square.nogrow(title="{vocGlob.reimport}")
                             svg.feather
                                 use(xlink:href="#refresh-ccw")
-                        button.square.nogrow(onclick="{deleteVariant(sound)}" title="{vocGlob.delete}")
+                        button.square.nogrow(onclick="{deleteVariant(variant)}" title="{vocGlob.delete}")
                             svg.feather
                                 use(xlink:href="#x")
-                    label.file.wide
-                        .button.wide.nm
+                    .flexrow
+                        button(onclick="{openRecorder}")
                             svg.feather
-                                use(xlink:href="#plus")
-                            span  {voc.addVariant}
-                        input(type="file" ref="inputsound" accept=".mp3,.ogg,.wav" onchange="{importVariant}")
+                                use(xlink:href="#mic")
+                                span {vocFull.sounds.record}
+                        .aSpacer.nogrow
+                        button(onclick="{openGallery}")
+                            svg.feather
+                                use(xlink:href="#music")
+                                span {vocGlob.openAssetGallery}
+                        .aSpacer.nogrow
+                        label.file
+                            .button.wide.nm
+                                svg.feather
+                                    use(xlink:href="#folder-plus")
+                                span  {voc.addVariant}
+                            input(type="file" ref="inputsound" accept=".mp3,.ogg,.wav" onchange="{importVariant}")
                 .flexfix-footer
                     h2.nmt {vocGlob.settings}
                     .aSpacer
@@ -121,6 +131,11 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 svg.feather
                     use(xlink:href="#check")
                 span {vocGlob.apply}
+    builtin-asset-gallery(
+        if="{showGallery}"
+        type="sounds" sound="{asset}"
+        onclose="{closeGallery}"
+    )
     script.
         const path = require('path');
         this.namespace = 'soundView';
@@ -137,14 +152,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
 
         console.log("11h_filter") // TODO: remove
 
-        this.smallWaveforms = {};
-        this.largeWaveforms = {};
-        for (const variant of this.asset.variants) {
-            this.smallWaveforms[variant.uid] =
-                SoundPreviewer.get(this.asset, false, variant.uid, false);
-            this.largeWaveforms[variant.uid] =
-                SoundPreviewer.get(this.asset, false, variant.uid, true);
-        }
+        this.getPreview = (variant, long) => SoundPreviewer.get(this.asset, false, variant.uid, long);
 
         this.swatches = require('./data/node_requires/themes').getSwatches();
 
@@ -248,4 +256,16 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         this.saveAndClose = () => {
             this.saveAsset();
             this.opts.ondone(this.asset);
+        };
+
+
+        // Built-in asset gallery
+
+        this.showGallery = false;
+        this.openGallery = () => {
+            this.showGallery = true;
+        };
+        this.closeGallery = () => {
+            this.showGallery = false;
+            this.update();
         };

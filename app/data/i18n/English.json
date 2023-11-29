@@ -559,7 +559,6 @@
         "fillerLabel": "Text label"
     },
     "sounds": {
-        "create": "Create",
         "record": "Record"
     },
     "soundRecorder": {
@@ -1055,8 +1054,8 @@
         "offY": "Offset Y:"
     },
     "soundView": {
-        "name": "Name:",
-        "addVariant": "Add a variant",
+        "variants": "Variants",
+        "addVariant": "Add from file…",
         "preload": "Load on game start",
         "volume": "Volume",
         "pitch": "Pitch",
