@@ -8,7 +8,7 @@ const cssHelpers = Object.freeze({
     sliderBackgroundColor: 'tomato',
     sliderBorderColor: '#8b8b8b',
     sliderBorderRadius: '4px',
-    sliderCircleSize: 20,
+    sliderCircleSize: 24,
     sliderCircleBackgroundColor: '#ffffff',
     sliderCircleFocusColor: '#0074cc',
     sliderCommonSize: '0.5em',
@@ -690,7 +690,7 @@ const cssHelpers = Object.freeze({
     setupStyles() {
       // TODO: Max P - this logic should be revisited and made more dynamic
       // TODO: without all of the conditioals for each styleable attribute
-      const rangeInputEls = this.shadowRoot.querySelectorAll(
+      const rangeInputEls = this.shadowRoot.querySelectorAll(   
         '.min-max-slider > .range-input'
       );
   
