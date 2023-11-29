@@ -136,6 +136,11 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         type="sounds" sound="{asset}"
         onclose="{closeGallery}"
     )
+    sound-recorder(
+        if="{showRecorder}"
+        sound="{asset}"
+        onclose="{closeRecorder}"
+    )
     script.
         const path = require('path');
         this.namespace = 'soundView';
@@ -267,5 +272,16 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         };
         this.closeGallery = () => {
             this.showGallery = false;
+            this.update();
+        };
+
+        // Recorder
+
+        this.showRecorder = false;
+        this.openRecorder = () => {
+            this.showRecorder = true;
+        };
+        this.closeRecorder = () => {
+            this.showRecorder = false;
             this.update();
         };
