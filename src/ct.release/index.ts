@@ -51,27 +51,33 @@ setInterval(function cleanDeadPool() {
 // eslint-disable-next-line prefer-destructuring
 export const meta: ExportedMeta = [/*!@projectmeta@*/][0];
 
+let currentViewMode: viewMode = '/*@viewMode@*/' as viewMode;
+let currentHighDPIMode = Boolean([/*!@highDensity@*/][0]);
+
 /**
  * An object that houses render settings for the game.
  */
 export const settings = {
     /** If set to true, enables retina (high-pixel density) rendering. */
     get highDensity(): boolean {
-        return (pixiApp.renderer as pixiMod.Renderer).autoDensity;
+        return currentHighDPIMode;
     },
     set highDensity(value: boolean) {
-        // Faulty pixi.js typings, you CAN change autoDensity
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (pixiApp.renderer as any).autoDensity = value;
+        currentHighDPIMode = value;
+        if (currentHighDPIMode) {
+            PIXI.settings.RESOLUTION = window.devicePixelRatio;
+        } else {
+            PIXI.settings.RESOLUTION = 1;
+        }
         if (roomsM.current) {
             updateViewport();
         }
     },
-    /** A target number of frames per second. It can be interpreted as a second in timers. */
-    get speed(): number {
+    /** A target number of frames per second. */
+    get targetFps(): number {
         return pixiApp.ticker.maxFPS;
     },
-    set speed(value: number) {
+    set targetFps(value: number) {
         pixiApp.ticker.maxFPS = value;
     },
     /**
@@ -86,43 +92,23 @@ export const settings = {
      * of the screen, and will be scaled by whole numbers (x2, x3, x4 and so on).
      * * `expand` — the viewport will fill the whole screen. The camera will
      * expand to accommodate the new area.
-     * * `expandViewport` — same as `expand` plus simple camera management
-     * so new area spans around the old camera bounds.
      * * `scaleFit` — the viewport will proportionally fill the screen, leaving letterboxes
      * around the base viewport. The resolution is changed to match the screen.
      * * `scaleFill` — the viewport fills the screen, expanding the camera to avoid letterboxing.
      * The resolution is changed to match the screen.
      */
-    viewMode: '/*@viewMode@*/' as viewMode,
+    get viewMode(): viewMode {
+        return currentViewMode;
+    },
+    set viewMode(value: viewMode) {
+        currentViewMode = value;
+        updateViewport();
+    },
 
-    get width(): number {
-        return pixiApp.renderer.view.width;
-    },
     /**
-     * Resizes the drawing canvas and viewport to the given value in pixels.
-     * When used with ct.fittoscreen, can be used to enlarge/shrink the viewport.
-     * @param {number} value New width in pixels
+     * A boolean property that can be changed to exit or enter fullscreen mode.
+     * In web builds, you can only change this value in pointer events of your templates.
      */
-    set width(value: number) {
-        cameraM.width = value;
-        if (roomsM.current) {
-            updateViewport();
-        }
-    },
-    get height(): number {
-        return pixiApp.renderer.view.height;
-    },
-    /**
-     * Resizes the drawing canvas and viewport to the given value in pixels.
-     * When used with ct.fittoscreen, can be used to enlarge/shrink the viewport.
-     * @param {number} value New height in pixels
-     */
-    set height(value: number) {
-        cameraM.height = value;
-        if (roomsM.current) {
-            updateViewport();
-        }
-    },
     get fullscreen(): boolean {
         return getIsFullscreen();
     },
@@ -143,9 +129,11 @@ export let pixiApp: pixiMod.Application;
         height: [/*!@startheight@*/][0] as number,
         antialias: ![/*!@pixelatedrender@*/][0],
         powerPreference: 'high-performance' as WebGLPowerPreference,
+        autoDensity: true,
         sharedTicker: false,
         backgroundAlpha: [/*@transparent@*/][0] ? 0 : 1
     };
+    PIXI.settings.RESOLUTION = currentHighDPIMode ? window.devicePixelRatio : 1;
     try {
         pixiApp = new PIXI.Application(pixiAppSettings);
     } catch (e) {
@@ -160,9 +148,8 @@ export let pixiApp: pixiMod.Application;
     if (!pixiApp.renderer.options.antialias) {
         PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
     }
-    settings.speed = [/*!@maxfps@*/][0] || 60;
+    settings.targetFps = [/*!@maxfps@*/][0] || 60;
     // eslint-disable-next-line prefer-destructuring
-    settings.highDensity = [/*!@highDensity@*/][0];
     document.getElementById('ct').appendChild(pixiApp.view as HTMLCanvasElement);
 }
 
@@ -195,14 +182,16 @@ let loading: Promise<void>;
         deadPool.push(copy);
     };
     const manageCamera = () => {
-        cameraM.update(uM.deltaUi);
+        cameraM.update(uM.timeUi);
         cameraM.manageStage();
     };
 
     const loop = () => {
         const {ticker} = pixiApp;
-        uM.delta = ticker.deltaMS / (1000 / (ticker.maxFPS || 60));
-        uM.deltaUi = ticker.elapsedMS / (1000 / (ticker.maxFPS || 60));
+        uM.delta = ticker.deltaMS / (1000 / (settings.targetFps || 60));
+        uM.deltaUi = ticker.elapsedMS / (1000 / (settings.targetFps || 60));
+        uM.time = ticker.deltaMS / 1000;
+        uM.timeUi = uM.timeUI = ticker.elapsedMS / 1000;
         inputsM.updateActions();
         timerM.updateTimers();
         /*!%beforeframe%*/
