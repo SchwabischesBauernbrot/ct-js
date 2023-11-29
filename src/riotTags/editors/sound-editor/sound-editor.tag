@@ -5,6 +5,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             // need to somehow get the played variant back
             // from the sound lib
             img(src="{largeWaveforms[asset.variants[0].uid]}" if="{asset.variants.length}")
+            .aSpacer(if="{!asset.variants.length}")
             .aSpacer.nogrow
             button.round.square.nogrow.alignmiddle(onclick="{test}")
                 svg.feather
