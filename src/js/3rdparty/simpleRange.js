@@ -62,7 +62,7 @@ const cssHelpers = Object.freeze({
           appearance: none;
           outline: none !important;
           background: transparent;
-          background-image: linear-gradient(to bottom, transparent 0%, transparent 30%, ${cssHelpers.sliderBackgroundColor} 30%, ${cssHelpers.sliderBackgroundColor} 60%, transparent 60%, transparent 100%);
+          background-image: linear-gradient(to bottom, transparent 0%, transparent 35%, ${cssHelpers.sliderBackgroundColor} 35%, ${cssHelpers.sliderBackgroundColor} 65%, transparent 65%, transparent 100%);
         }
           
         .min-max-slider > .range-input::-webkit-slider-thumb {
@@ -696,7 +696,7 @@ const cssHelpers = Object.freeze({
   
       rangeInputEls.forEach((el) => {
         if (this.sliderColor) {
-          el.style.backgroundImage = `linear-gradient(to bottom, transparent 0%, transparent 30%, ${this.sliderColor} 30%, ${this.sliderColor} 60%, transparent 60%, transparent 100%)`;
+          el.style.backgroundImage = `linear-gradient(to bottom, transparent 0%, transparent 35%, ${this.sliderColor} 35%, ${this.sliderColor} 65%, transparent 65%, transparent 100%)`;
         }
   
         if (this.circleColor) {
