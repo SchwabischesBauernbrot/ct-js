@@ -23,6 +23,7 @@ export const preparePreviews = async function (
             ...FontPreviewer.retain(),
             ...RoomPreviewer.retain(),
             ...StylePreviewer.retain(),
+            ...SoundPreviewer.retain(assets.sound),
             ...TexturePreviewer.retain(assets.texture)
         ];
 
@@ -101,6 +102,12 @@ export const preparePreviews = async function (
     generationPromises.push(...assets.texture.map(async (texture: ITexture) => {
         if (!(await fileExists(TexturePreviewer.get(texture, true)))) {
             return TexturePreviewer.save(texture);
+        }
+        return Promise.resolve();
+    }));
+    generationPromises.push(...assets.sound.map(async (sound: ISound) => {
+        if (!(await fileExists(SoundPreviewer.get(sound, true)))) {
+            return SoundPreviewer.save(sound);
         }
         return Promise.resolve();
     }));

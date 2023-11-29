@@ -60,23 +60,22 @@ export class SoundPreviewer {
         });
     }
 
-    static save(sound: ISound, variant?: ISound['variants'][0]): Promise<string> {
+    static async save(sound: ISound, variant?: ISound['variants'][0]): Promise<string> {
         if (variant) {
-            return Promise.all([
+            const canvases = await Promise.all([
                 SoundPreviewer.create(sound, variant, false),
                 SoundPreviewer.create(sound, variant, true)
-            ])
-            .then((canvases) => Promise.all(canvases.map((canvas, id) =>
+            ]);
+            await Promise.all(canvases.map((canvas, id) =>
                 outputCanvasToFile(canvas, SoundPreviewer.get(
                     sound,
                     true,
                     variant.uid,
                     Boolean(id)
-                )))))
-            .then(() => SoundPreviewer.get(sound, true, variant.uid, false));
+                ))));
+            return SoundPreviewer.get(sound, true, variant.uid, false);
         }
-        return Promise.all(sound.variants.map((variant) =>
-            SoundPreviewer.save(sound, variant)))
-        .then(() => SoundPreviewer.get(sound, true));
+        await Promise.all(sound.variants.map((variant) => SoundPreviewer.save(sound, variant)));
+        return SoundPreviewer.get(sound, true);
     }
 }
