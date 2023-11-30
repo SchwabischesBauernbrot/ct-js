@@ -9,7 +9,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             .aSpacer.nogrow
             button.round.square.nogrow.alignmiddle(onclick="{playAsset}")
                 svg.feather
-                    use(xlink:href="#{playing ? 'pause' : 'play'}")
+                    use(xlink:href="#{currentSoundPlaying ? 'pause' : 'play'}")
         .flexrow.sound-editor-Columns
             .fifty.npl.flexfix
                 .flexfix-header
@@ -154,7 +154,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
 
         const soundResMethods = require('./data/node_requires/resources/sounds');
         const {SoundPreviewer} = require('./data/node_requires/resources/preview/sound');
-        const {sounds: allSounds, soundsLib, pixiSoundPrefix, playVariant} = require('./data/ct.shared/ctSound');
+        const {playVariant, playWithoutEffects} = require('./data/ct.shared/ctSound');
 
         this.currentSoundPlaying = null;
         soundResMethods.loadSound(this.asset);
@@ -173,9 +173,6 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             this.asset.variants = newVariants;
         };
 
-        this.getPrefixedVariant = variantUid => `${pixiSoundPrefix}${variantUid}`;
-
-
         this.playAsset = () => {
             const variant = this.asset.variants[
                 Math.floor(Math.random() * this.asset.variants.length)
@@ -188,20 +185,23 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             this.currentVariant = null;
             this.update();
         };
-        this.playVariant = (variant, noSkip) => () => {
+        this.playVariant = (variant, testing) => () => {
             // Stop any previous sound
             if (this.currentSoundPlaying) {
                 this.currentSoundPlaying.stop();
                 this.currentSoundPlaying = null;
+                if (testing) {
+                    this.currentVariant = null;
+                    return;
+                }
             }
             // Clicked on the save variant that was played: just stop playback.
-            // Exception: when testing the whole asset
-            if (this.currentVariant === variant && !noSkip) {
+            if (this.currentVariant === variant) {
                 this.currentVariant = null;
                 return;
             }
             this.currentVariant = variant;
-            this.currentSoundPlaying = playVariant(this.asset, variant, {
+            this.currentSoundPlaying = (testing ? playVariant : playWithoutEffects)(this.asset, variant, {
                 complete: onSoundComplete
             });
         };

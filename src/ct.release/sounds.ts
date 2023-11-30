@@ -79,7 +79,11 @@ const withSound = <T>(name: string, fn: (sound: Sound) => T): T => {
  *
  * @param {string} name Sound's name
  */
-export const playVariant = (sound: ExportedSound, variant: ExportedSound['variants'][0], options?: PlayOptions): webaudio.WebAudioInstance => {
+export const playVariant = (
+    sound: ExportedSound,
+    variant: ExportedSound['variants'][0],
+    options?: PlayOptions
+): webaudio.WebAudioInstance => {
     const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`).play(options) as
         webaudio.WebAudioInstance;
     if (sound.volume?.enabled) {
@@ -116,6 +120,16 @@ export const playVariant = (sound: ExportedSound, variant: ExportedSound['varian
             // 🍝
         );
     }
+    return pixiSoundInst;
+};
+
+export const playWithoutEffects = (
+    sound: ExportedSound,
+    variant: ExportedSound['variants'][0],
+    options?: PlayOptions
+): webaudio.WebAudioInstance => {
+    const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`).play(options) as
+        webaudio.WebAudioInstance;
     return pixiSoundInst;
 };
 
