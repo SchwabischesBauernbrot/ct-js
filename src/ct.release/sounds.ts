@@ -57,6 +57,10 @@ const randomRange = (min: number, max: number): number => Math.random() * (max -
  * (with variants) or imported by a user though `res.loadSound`.
  */
 const withSound = <T>(name: string, fn: (sound: Sound) => T): T => {
+    const pixiFind = pixiSound.find(name);
+    if (pixiFind) {
+        return fn(pixiFind);
+    }
     if (name in pixiSoundInstances) {
         return fn(pixiSoundInstances[name]);
     } else if (name in soundMap) {
@@ -75,20 +79,8 @@ const withSound = <T>(name: string, fn: (sound: Sound) => T): T => {
  *
  * @param {string} name Sound's name
  */
-const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebAudioInstance => {
-    // Keep only options that are not setable in editor
-    // const {filters, speed, volume, ...notEditorOptions} = options;
-    const notEditorOptions = Object.keys(options).reduce((o, k) => {
-        if (k !== 'filters' && k !== 'speed' && k !== 'volume') {
-            o[k] = options[k];
-        }
-        return o;
-    }, {});
-    if (sound instanceof Sound) {
-        return sound.play(notEditorOptions) as webaudio.WebAudioInstance;
-    }
-    const variant = sound.variants[Math.floor(Math.random() * sound.variants.length)];
-    const pixiSoundInst = pixiSoundInstances[`${pixiSoundPrefix}${variant.uid}`].play(notEditorOptions) as
+export const playVariant = (sound: ExportedSound, variant: ExportedSound['variants'][0], options?: PlayOptions): webaudio.WebAudioInstance => {
+    const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`).play(options) as
         webaudio.WebAudioInstance;
     if (sound.volume?.enabled) {
         (pixiSoundInst as IMediaInstance).volume =
@@ -102,7 +94,6 @@ const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebA
     } else if (options?.speed !== void 0) {
         (pixiSoundInst as IMediaInstance).speed = options.speed;
     }
-    // TODO: filters can also be in options...
     if (sound.distortion?.enabled) {
         soundsLib.addDistortion(
             pixiSoundInst,
@@ -126,6 +117,14 @@ const playVariant = (sound: ExportedSound, options?: PlayOptions): webaudio.WebA
         );
     }
     return pixiSoundInst;
+};
+
+export const playRandomVariant = (
+    sound: ExportedSound,
+    options?: PlayOptions
+): webaudio.WebAudioInstance => {
+    const variant = sound.variants[Math.floor(Math.random() * sound.variants.length)];
+    return playVariant(sound, variant, options);
 };
 
 export const soundsLib = {
@@ -166,19 +165,13 @@ export const soundsLib = {
         if (name in soundMap) {
             // Exported sounds
             const exported = soundMap[name];
-            return playVariant(exported, options);
+            return playRandomVariant(exported, options);
         }
         if (name in pixiSoundInstances) {
             // User-loaded sounds
             return pixiSoundInstances[name].play(options);
         }
         throw new Error(`[sounds.play] Sound "${name}" was not found. Is it a typo?`);
-    },
-    playDirectVariant(
-        exported: ExportedSound,
-        options?: PlayOptions
-    ): Promise<IMediaInstance> | IMediaInstance {
-        return playVariant(exported, options);
     },
 
     /**

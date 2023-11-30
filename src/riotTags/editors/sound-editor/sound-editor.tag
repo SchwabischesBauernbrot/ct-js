@@ -7,7 +7,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             img.soundthumbnail(src="{getPreview(asset.variants[0], true)}" if="{asset.variants.length}")
             .aSpacer(if="{!asset.variants.length}")
             .aSpacer.nogrow
-            button.round.square.nogrow.alignmiddle(onclick="{test}")
+            button.round.square.nogrow.alignmiddle(onclick="{playAsset}")
                 svg.feather
                     use(xlink:href="#{playing ? 'pause' : 'play'}")
         .flexrow.sound-editor-Columns
@@ -15,18 +15,19 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 .flexfix-header
                     h2.nmt {voc.variants}
                 .flexfix-body
-                    .aSpacer
-                    .flexrow.wide(each="{variant in asset.variants}")
-                        img.aVariantThumbnail.soundthumbnail(src="{getPreview(variant, true)}")
-                        button.square.nogrow.large(onclick="{togglePlay(variant)}" title="{vocGlob.play}")
-                            svg.feather
-                                use(xlink:href="#{playing(variant.uid) ? 'pause' : 'play'}")
-                        button.square.nogrow(title="{vocGlob.reimport}")
-                            svg.feather
-                                use(xlink:href="#refresh-ccw")
-                        button.square.nogrow(onclick="{deleteVariant(variant)}" title="{vocGlob.delete}")
-                            svg.feather
-                                use(xlink:href="#x")
+                    ul.aStripedList
+                        li.flexrow.wide.npr.npl(each="{variant in asset.variants}")
+                            img.aVariantThumbnail.soundthumbnail(src="{getPreview(variant, true)}")
+                            .aSpacer.nogrow
+                            button.square.inline.alignmiddle.nogrow.large(onclick="{playVariant(variant)}" title="{vocGlob.play}")
+                                svg.feather
+                                    use(xlink:href="#{(currentSoundPlaying && currentVariant === variant) ? 'pause' : 'play'}")
+                            button.square.inline.alignmiddle.nogrow(title="{vocGlob.reimport}")
+                                svg.feather
+                                    use(xlink:href="#refresh-ccw")
+                            button.square.inline.alignmiddle.nogrow.nmr(onclick="{deleteVariant(variant)}" title="{vocGlob.delete}")
+                                svg.feather
+                                    use(xlink:href="#x")
                     .aSpacer
                     .flexrow
                         button(onclick="{openRecorder}")
@@ -149,18 +150,16 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         this.mixin(require('./data/node_requires/riotMixins/wire').default);
         this.mixin(require('./data/node_requires/riotMixins/discardio').default);
 
+        this.swatches = require('./data/node_requires/themes').getSwatches();
+
         const soundResMethods = require('./data/node_requires/resources/sounds');
         const {SoundPreviewer} = require('./data/node_requires/resources/preview/sound');
-        const { sounds: allSounds, soundsLib, pixiSoundPrefix } = require('./data/ct.shared/ctSound');
+        const {sounds: allSounds, soundsLib, pixiSoundPrefix, playVariant} = require('./data/ct.shared/ctSound');
 
         this.currentSoundPlaying = null;
         soundResMethods.loadSound(this.asset);
 
-        console.log("11h_filter") // TODO: remove
-
         this.getPreview = (variant, long) => SoundPreviewer.get(this.asset, false, variant.uid, long);
-
-        this.swatches = require('./data/node_requires/themes').getSwatches();
 
         this.reimportVariant = variant => e => {
             // TODO:
@@ -174,49 +173,43 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
             this.asset.variants = newVariants;
         };
 
-        this.defineSoundName = variantUid => {
-            return `${pixiSoundPrefix}${variantUid}`;
-        }
+        this.getPrefixedVariant = variantUid => `${pixiSoundPrefix}${variantUid}`;
 
-        this.stop = () => {
-            if(this.currentSoundPlaying) {
-                soundsLib.stop(this.currentSoundPlaying);
+
+        this.playAsset = () => {
+            const variant = this.asset.variants[
+                Math.floor(Math.random() * this.asset.variants.length)
+            ];
+            this.playVariant(variant, true)();
+        };
+
+        const onSoundComplete = (sound) => {
+            this.currentSoundPlaying = null;
+            this.currentVariant = null;
+            this.update();
+        };
+        this.playVariant = (variant, noSkip) => () => {
+            // Stop any previous sound
+            if (this.currentSoundPlaying) {
+                this.currentSoundPlaying.stop();
                 this.currentSoundPlaying = null;
             }
-        }
-
-        this.test = () => {
-            soundsLib.playDirectVariant(this.asset);
-        }
-
-        this.play = variantUid => {
-            this.stop();
-            const soundName = this.defineSoundName(variantUid);
-            this.currentSoundPlaying = soundName.replace(pixiSoundPrefix, "");
-            soundsLib.playDirectVariant(this.asset);
-        }
-
-        this.playing = variantUid => {
-            if(this.currentSoundPlaying !== null) {
-                return soundsLib.playing(this.defineSoundName(variantUid));
+            // Clicked on the save variant that was played: just stop playback.
+            // Exception: when testing the whole asset
+            if (this.currentVariant === variant && !noSkip) {
+                this.currentVariant = null;
+                return;
             }
-            return false;
-        }
-
-        this.togglePlay = variant => e => {
-            // TODO/WIP: use callback to know when the sound finished "itself" from playing 
-            const soundName = this.defineSoundName(variant.uid);
-            if(this.currentSoundPlaying === soundName.replace(pixiSoundPrefix, "")) {
-                this.stop();
-            } else {
-                this.play(variant.uid);
-            }
-        }
+            this.currentVariant = variant;
+            this.currentSoundPlaying = playVariant(this.asset, variant, {
+                complete: onSoundComplete
+            });
+        };
 
         this.importVariant = async () => {
             const source = this.refs.inputsound.files[0].path;
             const sounds = require('./data/node_requires/resources/sounds');
-            if (!this.asset.lastmod && this.asset.name === 'Sound_' + this.asset.uid.split('-').pop()) {
+            if (!this.asset.lastmod && this.asset.name === 'New Sound') {
                 this.asset.name = path.basename(source, path.extname(source));
             }
             const variant = await sounds.addSoundFile(this.asset, source);
@@ -226,15 +219,12 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                 SoundPreviewer.get(this.asset, false, variant.uid, true);
             this.update();
             soundResMethods.loadSound(this.asset);
-        }
+        };
 
         this.toggleCheckbox = prop => e => {
             // TODO: volume and pitch
             console.log(prop);
             this.asset[prop].enabled = !this.asset[prop].enabled;
-            if (this.currentSoundPlaying) {
-                this.stop();
-            }
         };
         this.setProp = (prop, arg = null) => e => {
             const { minRangeValue: min, maxRangeValue: max } = e.detail;
@@ -256,7 +246,9 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
 
         this.saveAsset = () => {
             this.writeChanges();
-            this.stop();
+            if (this.currentSoundPlaying) {
+                this.currentSoundPlaying.stop();
+            }
             return true;
         };
         this.saveAndClose = () => {
@@ -273,6 +265,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         };
         this.closeGallery = () => {
             this.showGallery = false;
+            soundResMethods.loadSound(this.asset);
             this.update();
         };
 
@@ -284,5 +277,6 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
         };
         this.closeRecorder = () => {
             this.showRecorder = false;
+            soundResMethods.loadSound(this.asset);
             this.update();
         };

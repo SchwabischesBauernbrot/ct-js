@@ -264,6 +264,11 @@ const watchCtJsLib = () => {
         notifier.notify(makeErrorObj('Ct.js game library failure', err));
         console.error('[Ct.js game library error]', err);
     });
+
+    gulp.watch([
+        './src/ct.release/**/*',
+        '!./src/ct.release/changes.txt'
+    ], buildCtIdeSoundLib);
 };
 
 const copyInEditorDocs = () =>
