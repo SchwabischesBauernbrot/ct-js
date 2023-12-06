@@ -9,11 +9,11 @@
 // to stop the sound at any time.
 
 /* eslint no-use-before-define: 0 */
-import {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound, SoundLibrary} from 'node_modules/@pixi/sound';
+import type {sound as pixiSound, filters as pixiSoundFilters, Filter, IMediaInstance, PlayOptions, Sound, SoundLibrary} from 'node_modules/@pixi/sound';
 import type {webaudio} from 'node_modules/@pixi/sound/lib';
 import type {ExportedSound} from '../node_requires/exporter/_exporterContracts';
 
-import * as pixiMod from 'node_modules/pixi.js';
+import type * as pixiMod from 'node_modules/pixi.js';
 declare var PIXI: typeof pixiMod & {
     sound: typeof pixiSound & {
         filters: typeof pixiSoundFilters;
@@ -38,13 +38,13 @@ type FilterPreserved = Filter & {
 };
 
 type fxName = Exclude<keyof typeof pixiSoundFilters, 'Filter' | 'StreamFilter'>;
-const fxNames = Object.keys(pixiSoundFilters)
+const fxNames = Object.keys(PIXI.sound.filters)
 .filter((name: keyof typeof pixiSoundFilters) => name !== 'Filter' && name !== 'StreamFilter');
 const fxNamesToClasses = {} as {
     [T in fxName]: typeof pixiSoundFilters[T]
 };
 for (const fxName of fxNames) {
-    fxNamesToClasses[fxName] = pixiSoundFilters[fxName];
+    fxNamesToClasses[fxName] = PIXI.sound.filters[fxName];
 }
 
 /** A prefix for PIXI.Loader to distinguish between sounds and other asset types like textures. */
@@ -57,7 +57,7 @@ const randomRange = (min: number, max: number): number => Math.random() * (max -
  * (with variants) or imported by a user though `res.loadSound`.
  */
 const withSound = <T>(name: string, fn: (sound: Sound) => T): T => {
-    const pixiFind = pixiSound.find(name);
+    const pixiFind = PIXI.sound.find(name);
     if (pixiFind) {
         return fn(pixiFind);
     }
@@ -84,7 +84,7 @@ export const playVariant = (
     variant: ExportedSound['variants'][0],
     options?: PlayOptions
 ): webaudio.WebAudioInstance => {
-    const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`).play(options) as
+    const pixiSoundInst = PIXI.sound.find(`${pixiSoundPrefix}${variant.uid}`).play(options) as
         webaudio.WebAudioInstance;
     if (sound.volume?.enabled) {
         (pixiSoundInst as IMediaInstance).volume =
@@ -128,7 +128,7 @@ export const playWithoutEffects = (
     variant: ExportedSound['variants'][0],
     options?: PlayOptions
 ): webaudio.WebAudioInstance => {
-    const pixiSoundInst = pixiSound.find(`${pixiSoundPrefix}${variant.uid}`).play(options) as
+    const pixiSoundInst = PIXI.sound.find(`${pixiSoundPrefix}${variant.uid}`).play(options) as
         webaudio.WebAudioInstance;
     return pixiSoundInst;
 };
