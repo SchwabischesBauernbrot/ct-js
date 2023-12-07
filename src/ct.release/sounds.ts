@@ -57,7 +57,7 @@ const randomRange = (min: number, max: number): number => Math.random() * (max -
  * (with variants) or imported by a user though `res.loadSound`.
  */
 const withSound = <T>(name: string, fn: (sound: Sound) => T): T => {
-    const pixiFind = PIXI.sound.find(name);
+    const pixiFind = PIXI.sound.exists(name) && PIXI.sound.find(name);
     if (pixiFind) {
         return fn(pixiFind);
     }
@@ -353,10 +353,11 @@ export const soundsLib = {
      */
     addFilter(
         sound: false | string | Sound | webaudio.WebAudioInstance,
-        filter: pixiSoundFilters.Filter
+        filter: pixiSoundFilters.Filter,
+        filterName: string
     ): void {
         const fx = filter as FilterPreserved;
-        fx.preserved = fx.toString().slice(8, -1);
+        fx.preserved = filterName;
         if (sound === false) {
             PIXI.sound.filtersAll = [...(PIXI.sound.filtersAll || []), fx];
         } else if (typeof sound === 'string') {
@@ -383,7 +384,7 @@ export const soundsLib = {
         amount: number
     ): pixiSoundFilters.DistortionFilter {
         const fx = new PIXI.sound.filters.DistortionFilter(amount);
-        soundsLib.addFilter(sound, fx);
+        soundsLib.addFilter(sound, fx, 'DistortionFilter');
         return fx;
     },
 
@@ -421,7 +422,7 @@ export const soundsLib = {
     ): pixiSoundFilters.EqualizerFilter {
         // eslint-disable-next-line max-len
         const fx = new PIXI.sound.filters.EqualizerFilter(f32, f64, f125, f250, f500, f1k, f2k, f4k, f8k, f16k);
-        soundsLib.addFilter(sound, fx);
+        soundsLib.addFilter(sound, fx, 'EqualizerFilter');
         return fx;
     },
 
@@ -435,7 +436,7 @@ export const soundsLib = {
     addMonoFilter(sound: false | string | Sound | webaudio.WebAudioInstance):
         pixiSoundFilters.MonoFilter {
         const fx = new PIXI.sound.filters.MonoFilter();
-        soundsLib.addFilter(sound, fx);
+        soundsLib.addFilter(sound, fx, 'MonoFilter');
         return fx;
     },
 
@@ -456,7 +457,7 @@ export const soundsLib = {
         reverse: boolean
     ): pixiSoundFilters.ReverbFilter {
         const fx = new PIXI.sound.filters.ReverbFilter(seconds, decay, reverse);
-        soundsLib.addFilter(sound, fx);
+        soundsLib.addFilter(sound, fx, 'ReverbFilter');
         return fx;
     },
 
@@ -473,7 +474,7 @@ export const soundsLib = {
         pan: number
     ): pixiSoundFilters.StereoFilter {
         const fx = new PIXI.sound.filters.StereoFilter(pan);
-        soundsLib.addFilter(sound, fx);
+        soundsLib.addFilter(sound, fx, 'StereoFilter');
         return fx;
     },
 
@@ -487,7 +488,7 @@ export const soundsLib = {
     addTelephone(sound: false | string | Sound | webaudio.WebAudioInstance):
         pixiSoundFilters.TelephoneFilter {
         const fx = new PIXI.sound.filters.TelephoneFilter();
-        soundsLib.addFilter(sound, fx);
+        soundsLib.addFilter(sound, fx, 'TelephoneFilter');
         return fx;
     },
 
@@ -502,35 +503,48 @@ export const soundsLib = {
      * @returns {void}
      */
     removeFilter(name?: false | string | Sound | webaudio.WebAudioInstance, filter?: fxName): void {
+        const setFilters = (newFilters: pixiSoundFilters.Filter[]) => {
+            if (typeof name === 'string') {
+                withSound(name as string, soundInst => {
+                    soundInst.filters = newFilters;
+                });
+            } else {
+                (name as Sound).filters = newFilters;
+            }
+        };
+        // Remove all filters from all sound
+        if (!name && !filter) {
+            PIXI.sound.filtersAll = [];
+            return;
+        }
+        // Remove all filters from one sound
+        if (name && !filter) {
+            setFilters([]);
+            return;
+        }
+        // Remove one filter from all sound or one sound
+        // Copy existing filters
         let filters: pixiSoundFilters.Filter[];
         if (!name) {
             filters = PIXI.sound.filtersAll;
-        } else if (name && typeof name !== 'string') {
-            ({filters} = name);
+        } else {
+            filters = typeof name === 'string' ? withSound(name as string, soundInst => soundInst.filters) : name.filters;
         }
-        if (!filters && name) {
-            if (typeof name === 'string') {
-                // clear all variants' filters
-                withSound(name, sound => {
-                    soundsLib.removeFilter(sound, filter);
-                });
-                return;
-            }
-            soundsLib.removeFilter(name, filter);
-            return;
+        if (filter && !filter.includes('Filter')) {
+            filter += 'Filter';
         }
-        if (filters && filters.length > 0) {
-            if (!filter.includes('Filter')) {
-                filter += 'Filter';
+        const copy = [...filters];
+        // Remove the targeted filter from the copy
+        filters.forEach((f: FilterPreserved, i: number) => {
+            if (f.preserved === filter) {
+                copy.splice(i, 1);
             }
-            const copy = [...filters];
-            if (filter) {
-                filters.forEach((f: FilterPreserved, i: number) => {
-                    if (f.preserved === filter) {
-                        copy.splice(i, 1);
-                    }
-                });
-            }
+        });
+        // Set the cleaned filters to all sound or one sound
+        if (!name) {
+            PIXI.sound.filtersAll = copy;
+        } else {
+            setFilters(copy);
         }
     },
 
