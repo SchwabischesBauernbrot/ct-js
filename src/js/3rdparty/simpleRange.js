@@ -148,14 +148,22 @@ const cssHelpers = Object.freeze({
       this.attachShadow({ mode: 'open' });
       this.shadowRoot.appendChild(template.content.cloneNode(true));
     }
-  
+
+    parseValue = v => {
+      if (typeof v === 'string') {
+        v.replace('px', '');
+        return parseFloat(v);
+      }
+      return this.floatValue ? parseFloat(v.toFixed(1)) : parseInt(v);
+    }
+
     get sliderId() {
       return this.getAttribute('id');
     }
   
     get minRange() {
       const val = parseInt(this.getAttribute('min-range') ?? this.getAttribute('min'));
-      if  (isNaN(val)) {
+      if (isNaN(val)) {
         return 1;
       }
      return val;
@@ -178,17 +186,17 @@ const cssHelpers = Object.freeze({
     }
   
     get presetMin() {
-      return parseInt(this.getAttribute('preset-min'));
+      return this.parseValue(this.getAttribute('preset-min'));
     }
     set presetMin(presetMinVal) {
-      this.setAttribute('preset-min', presetMinVal);
+      this.setAttribute('preset-min', this.parseValue(presetMinVal));
     }
   
     get presetMax() {
-      return parseInt(this.getAttribute('preset-max'));
+      return this.parseValue(this.getAttribute('preset-max'));
     }
     set presetMax(presetMaxVal) {
-      this.setAttribute('preset-max', presetMaxVal);
+      this.setAttribute('preset-max', this.parseValue(presetMaxVal));
     }
   
     get numberOfLegendItemsToShow() {
@@ -267,6 +275,10 @@ const cssHelpers = Object.freeze({
         this.getAttribute('event-name-to-emit-on-change') ||
         constants.CUSTOM_EVENT_TO_EMIT_NAME
       );
+    }
+
+    get floatValue() {
+      return this.getAttribute('float-value');
     }
   
     static get observedAttributes() {
@@ -420,7 +432,7 @@ const cssHelpers = Object.freeze({
     }
   
     getAverage(min, max) {
-      return Math.floor((min + max) / 2);
+      return this.parseValue((min + max) / 2);
     }
   
     getEl(id) {
@@ -489,9 +501,9 @@ const cssHelpers = Object.freeze({
     setInitialSliderState(slider) {
       slider.innerHTML = `
         <label id="${constants.MIN_LABEL_ID}" for="${constants.MIN}">Minimum</label> 
-        <input id="${constants.MIN}" class="range-input" name="${constants.MIN}" type="range" step="1" />
+        <input id="${constants.MIN}" class="range-input" name="${constants.MIN}" type="range" step="${this.floatValue ? 0.1 : 1}" />
         <label id="${constants.MAX_LABEL_ID}" for="${constants.MAX}">Maximum</label>
-        <input id="${constants.MAX}" class="range-input" name="${constants.MAX}" type="range" step="1" />
+        <input id="${constants.MAX}" class="range-input" name="${constants.MAX}" type="range" step="${this.floatValue ? 0.1 : 1}" />
       `;
     }
   
@@ -549,8 +561,8 @@ const cssHelpers = Object.freeze({
           composed: true,
           detail: {
             sliderId: this.sliderId,
-            minRangeValue: Math.floor(min.getAttribute('data-value')),
-            maxRangeValue: Math.floor(max.getAttribute('data-value')),
+            minRangeValue: this.parseValue(min.getAttribute('data-value')),
+            maxRangeValue: this.parseValue(max.getAttribute('data-value')),
           },
         })
       );
@@ -568,18 +580,18 @@ const cssHelpers = Object.freeze({
       const rangeWidth = slider.offsetWidth;
       const thumbSize = cssHelpers.sliderCircleSize;
   
-      min.style.width = `${parseInt(
+      min.style.width = `${this.parseValue(
         thumbSize +
           ((splitValue - this.minRange) / (this.maxRange - this.minRange)) *
             (rangeWidth - 2 * thumbSize)
       )}px`;
-      max.style.width = `${parseInt(
+      max.style.width = `${this.parseValue(
         thumbSize +
           ((this.maxRange - splitValue) / (this.maxRange - this.minRange)) *
             (rangeWidth - 2 * thumbSize)
       )}px`;
       min.style.left = '0px';
-      max.style.left = `${parseInt(min.style.width)}px`;
+      max.style.left = `${this.parseValue(min.style.width)}px`;
   
       const lower = slider.querySelector('.lower');
   
@@ -641,9 +653,9 @@ const cssHelpers = Object.freeze({
       let min = slider.querySelector(minQuerySelector);
       let max = slider.querySelector(maxQuerySelector);
   
-      let minValue = Math.floor(parseInt(min.value));
-      let maxValue = Math.floor(parseInt(max.value));
-  
+      let minValue = this.parseValue(min.value);
+      let maxValue = this.parseValue(max.value);
+
       if (!this.isValidRangeSelection(el, minValue, maxValue)) {
         return;
       }

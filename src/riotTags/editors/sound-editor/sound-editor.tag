@@ -65,8 +65,8 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             )
                             b {voc[prop]}
                         range-selector(
-                            hide-label="hide-label" hide-legend="hide-legend"
-                            min="0" max="200"
+                            float-value="float-value"
+                            min="0" max="2"
                             preset-min="{asset[prop].min}" preset-max="{asset[prop].max}"
                             onrange-changed="{setProp(prop)}"
                             circle-focus-border="2px solid {swatches.act}"
@@ -82,7 +82,6 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                     div
                         span {voc.reverbDuration}
                         range-selector(
-                            hide-label="hide-label" hide-legend="hide-legend"
                             min="0" max="200"
                             preset-min="{asset.reverb.secondsMin}" preset-max="{asset.reverb.secondsMax}"
                             onrange-changed="{setProp('reverb', 'seconds')}"
