@@ -46,7 +46,7 @@ export const createAsset = function (): ISound {
             enabled: false,
             bands: Array(10).fill(({
                 min: 0,
-                max: 1
+                max: 0
             }) as randomized) as eqBands
         }
     };

@@ -115,9 +115,9 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                         each val in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
                             .flexrow
                                 code.sound-editor-aBand=`${frequences[val]}{voc.hertz}`
-                                range-selector(
+                                range-selector.sound-editor-aFilter-eqBand(
                                     hide-label="hide-label" hide-legend="hide-legend"
-                                    min="0" max="200"
+                                    min="-40" max="40"
                                     preset-min=`{asset.eq.bands[${val}].min}` preset-max=`{asset.eq.bands[${val}].max}`
                                     onrange-changed=`{setProp('eq', ${val})}`
                                     circle-focus-border="2px solid {swatches.act}"
@@ -126,6 +126,13 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                                     slider-color="{swatches.borderBright}"
                                     circle-size="24px"
                                 )
+                        .flexrow
+                            code.sound-editor-aBand
+                            span.nogrow -40
+                            .aSpacer
+                            span.nogrow 0
+                            .aSpacer
+                            span.nogrow 40
     .flexfix-footer.sound-editor-aWrapper
         p.nmb
             button.wide(onclick="{saveAndClose}" title="Shift+Control+S" data-hotkey="Control+S")
