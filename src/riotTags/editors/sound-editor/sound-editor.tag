@@ -65,7 +65,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             )
                             b {voc[prop]}
                         range-selector(
-                            float-value="float-value"
+                            float-value="float-value" float-precision="2"
                             min="0" max="2"
                             preset-min="{asset[prop].min}" preset-max="{asset[prop].max}"
                             onrange-changed="{setProp(prop)}"

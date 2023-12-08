@@ -154,7 +154,7 @@ const cssHelpers = Object.freeze({
         v.replace('px', '');
         return parseFloat(v);
       }
-      return this.floatValue ? parseFloat(v.toFixed(1)) : parseInt(v);
+      return this.floatValue ? parseFloat(v.toFixed(this.precision)) : parseInt(v);
     }
 
     get sliderId() {
@@ -278,7 +278,10 @@ const cssHelpers = Object.freeze({
     }
 
     get floatValue() {
-      return this.getAttribute('float-value');
+        return this.getAttribute('float-value') ?? false;
+    }
+    get precision() {
+        return this.getAttribute('float-precision') ?? 1;
     }
   
     static get observedAttributes() {
@@ -499,11 +502,12 @@ const cssHelpers = Object.freeze({
     // function appends other elements downstream and if we don't reset it then things
     // will end up getting duplicated
     setInitialSliderState(slider) {
+      const precision = this.floatValue ? (1 / Math.pow(10, this.precision)) : 1;
       slider.innerHTML = `
-        <label id="${constants.MIN_LABEL_ID}" for="${constants.MIN}">Minimum</label> 
-        <input id="${constants.MIN}" class="range-input" name="${constants.MIN}" type="range" step="${this.floatValue ? 0.1 : 1}" />
+        <label id="${constants.MIN_LABEL_ID}" for="${constants.MIN}">Minimum</label>
+        <input id="${constants.MIN}" class="range-input" name="${constants.MIN}" type="range" step="${precision}" />
         <label id="${constants.MAX_LABEL_ID}" for="${constants.MAX}">Maximum</label>
-        <input id="${constants.MAX}" class="range-input" name="${constants.MAX}" type="range" step="${this.floatValue ? 0.1 : 1}" />
+        <input id="${constants.MAX}" class="range-input" name="${constants.MAX}" type="range" step="${precision}" />
       `;
     }
   
