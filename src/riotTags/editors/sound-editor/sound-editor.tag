@@ -1,60 +1,60 @@
 sound-editor.aView.pad.flexfix(onclick="{tryClose}")
-    .flexfix-body.sound-editor-aWrapper
-        .flexrow
-            // TODO: make it dynamic
-            // need to somehow get the played variant back
-            // from the sound lib
-            img.soundthumbnail(src="{getPreview(asset.variants[0], true)}" if="{asset.variants.length}")
-            .aSpacer(if="{!asset.variants.length}")
-            .aSpacer.nogrow
-            button.round.square.nogrow.alignmiddle(onclick="{playAsset}")
-                svg.feather
-                    use(xlink:href="#{currentSoundPlaying ? 'pause' : 'play'}")
-        .flexrow.sound-editor-Columns
-            .fifty.npl.flexfix
-                .flexfix-header
-                    h2.nmt {voc.variants}
-                .flexfix-body
-                    ul.aStripedList
-                        li.flexrow.wide.npr.npl(each="{variant in asset.variants}")
-                            img.aVariantThumbnail.soundthumbnail(src="{getPreview(variant, true)}")
-                            .aSpacer.nogrow
-                            button.square.inline.alignmiddle.nogrow.large(onclick="{playVariant(variant)}" title="{vocGlob.play}")
-                                svg.feather
-                                    use(xlink:href="#{(currentSoundPlaying && currentVariant === variant) ? 'pause' : 'play'}")
-                            button.square.inline.alignmiddle.nogrow(title="{vocGlob.reimport}")
-                                svg.feather
-                                    use(xlink:href="#refresh-ccw")
-                            button.square.inline.alignmiddle.nogrow.nmr(onclick="{deleteVariant(variant)}" title="{vocGlob.delete}")
-                                svg.feather
-                                    use(xlink:href="#x")
-                    .aSpacer
-                    .flexrow
-                        button(onclick="{openRecorder}")
-                            svg.feather
-                                use(xlink:href="#mic")
-                                span {vocFull.sounds.record}
+    .flexfix-header.sound-editor-aWrapper.flexrow
+        // TODO: make it dynamic
+        // need to somehow get the played variant back
+        // from the sound lib
+        img.soundthumbnail(src="{getPreview(asset.variants[0], true)}" if="{asset.variants.length}")
+        .aSpacer(if="{!asset.variants.length}")
+        .aSpacer.nogrow
+        button.round.square.nogrow.alignmiddle(onclick="{playAsset}")
+            svg.feather
+                use(xlink:href="#{currentSoundPlaying ? 'pause' : 'play'}")
+    .flexfix-body.sound-editor-aWrapper.flexrow.sound-editor-Columns
+        .fifty.npl.flexfix.tall
+            .flexfix-header
+                h2.nmt {voc.variants}
+            .flexfix-body
+                ul.aStripedList
+                    li.flexrow.wide.npr.npl(each="{variant in asset.variants}")
+                        img.aVariantThumbnail.soundthumbnail(src="{getPreview(variant, true)}")
                         .aSpacer.nogrow
-                        button(onclick="{openGallery}")
+                        button.square.inline.alignmiddle.nogrow.large(onclick="{playVariant(variant)}" title="{vocGlob.play}")
                             svg.feather
-                                use(xlink:href="#music")
-                                span {vocGlob.openAssetGallery}
-                        .aSpacer.nogrow
-                        label.file
-                            .button.wide.nm
-                                svg.feather
-                                    use(xlink:href="#folder-plus")
-                                span  {voc.addVariant}
-                            input(type="file" ref="inputsound" accept=".mp3,.ogg,.wav" onchange="{importVariant}")
-                .flexfix-footer
-                    h2.nmt {vocGlob.settings}
-                    .aSpacer
-                    label.checkbox
-                        input(type="checkbox")
-                        b {voc.preload}
-            .fifty.npr
-                h2.nmt {voc.effects}
+                                use(xlink:href="#{(currentSoundPlaying && currentVariant === variant) ? 'pause' : 'play'}")
+                        button.square.inline.alignmiddle.nogrow(title="{vocGlob.reimport}")
+                            svg.feather
+                                use(xlink:href="#refresh-ccw")
+                        button.square.inline.alignmiddle.nogrow.nmr(onclick="{deleteVariant(variant)}" title="{vocGlob.delete}")
+                            svg.feather
+                                use(xlink:href="#x")
                 .aSpacer
+                .flexrow
+                    button(onclick="{openRecorder}")
+                        svg.feather
+                            use(xlink:href="#mic")
+                            span {vocFull.sounds.record}
+                    .aSpacer.nogrow
+                    button(onclick="{openGallery}")
+                        svg.feather
+                            use(xlink:href="#music")
+                            span {vocGlob.openAssetGallery}
+                    .aSpacer.nogrow
+                    label.file
+                        .button.wide.nm
+                            svg.feather
+                                use(xlink:href="#folder-plus")
+                            span  {voc.addVariant}
+                        input(type="file" ref="inputsound" accept=".mp3,.ogg,.wav" onchange="{importVariant}")
+            .flexfix-footer
+                h2.nmt {vocGlob.settings}
+                .aSpacer
+                label.checkbox
+                    input(type="checkbox")
+                    b {voc.preload}
+        .fifty.npr.flexfix.tall
+            .flexfix-header
+                h2.nmt {voc.effects}
+            .flexfix-body
                 virtual(each="{prop in ['volume', 'pitch', 'distortion']}")
                     .flexrow.sound-editor-aFilter
                         label.checkbox
