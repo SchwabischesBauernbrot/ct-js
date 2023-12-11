@@ -66,7 +66,7 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             b {voc[prop]}
                         range-selector(
                             float-value="float-value" float-precision="2"
-                            min="0" max="2"
+                            min="0" max="{prop === 'distortion' ? 1 : 2}"
                             preset-min="{asset[prop].min}" preset-max="{asset[prop].max}"
                             onrange-changed="{setProp(prop)}"
                             circle-focus-border="2px solid {swatches.act}"
@@ -82,7 +82,8 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                     div
                         span {voc.reverbDuration}
                         range-selector(
-                            min="0" max="200"
+                            float-value="float-value" float-precision="2"
+                            min="0" max="60"
                             preset-min="{asset.reverb.secondsMin}" preset-max="{asset.reverb.secondsMax}"
                             onrange-changed="{setProp('reverb', 'seconds')}"
                             circle-focus-border="2px solid {swatches.act}"
@@ -93,8 +94,8 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                         )
                         span {voc.reverbDecay}
                         range-selector(
-                            hide-label="hide-label" hide-legend="hide-legend"
-                            min="0" max="200"
+                            float-value="float-value" float-precision="2"
+                            min="0" max="60"
                             preset-min="{asset.reverb.decayMin}" preset-max="{asset.reverb.decayMax}"
                             onrange-changed="{setProp('reverb', 'decay')}"
                             circle-focus-border="2px solid {swatches.act}"
@@ -116,7 +117,8 @@ sound-editor.aView.pad.flexfix(onclick="{tryClose}")
                             .flexrow
                                 code.sound-editor-aBand=`${frequences[val]}{voc.hertz}`
                                 range-selector.sound-editor-aFilter-eqBand(
-                                    hide-label="hide-label" hide-legend="hide-legend"
+                                    hide-legend="hide-legend"
+                                    float-value="float-value" float-precision="2"
                                     min="-40" max="40"
                                     preset-min=`{asset.eq.bands[${val}].min}` preset-max=`{asset.eq.bands[${val}].max}`
                                     onrange-changed=`{setProp('eq', ${val})}`
